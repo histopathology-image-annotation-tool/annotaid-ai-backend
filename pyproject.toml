@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "annotaidaibe"
+version = "0.1.0"
+description = "Annotaid AI BE"
+authors = ["Adam Bublavý <xbublavy@stuba.sk>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11,<3.13"
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
+celery = "^5.3.5"
+redis = "^5.0.1"
+flower = "^2.0.1"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.6.1"
+flake8 = "^6.1.0"
+isort = "^5.12.0"
+nbqa = "^1.7.0"
+pre-commit = "^3.5.0"
+ipykernel = "^6.25.2"
+autopep8 = "^2.0.4"
+safety = "^2.3.5"
+pytest = "^7.4.2"
+pytest-cov = "^4.1.0"
+
+[[tool.poetry.source]]
+name = "fury"
+url = "https://pypi.fury.io/hiat-app/"
+priority = "supplemental"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "2.0"
+addopts = "-rfEX -p pytester --strict-markers"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test", "Acceptance"]
+python_functions = ["test"]
+# NOTE: "doc" is not included here, but gets tested explicitly via "doctesting".
+testpaths = ["tests"]
+xfail_strict = true
+filterwarnings = [
+    "error",
+    "default:Using or importing the ABCs:DeprecationWarning:unittest2.*",
+    # produced by older pyparsing<=2.2.0.
+    "default:Using or importing the ABCs:DeprecationWarning:pyparsing.*",
+    "default:the imp module is deprecated in favour of importlib:DeprecationWarning:nose.*",
+    # distutils is deprecated in 3.10, scheduled for removal in 3.12
+    "ignore:The distutils package is deprecated:DeprecationWarning",
+    # produced by python3.6/site.py itself (3.6.7 on Travis, could not trigger it with 3.6.8)."
+    "ignore:.*U.*mode is deprecated:DeprecationWarning:(?!(pytest|_pytest))",
+    # produced by pytest-xdist
+    "ignore:.*type argument to addoption.*:DeprecationWarning",
+    # produced on execnet (pytest-xdist)
+    "ignore:.*inspect.getargspec.*deprecated, use inspect.signature.*:DeprecationWarning",
+    # pytest's own futurewarnings
+    "ignore::pytest.PytestExperimentalApiWarning",
+    # Do not cause SyntaxError for invalid escape sequences in py37.
+    # Those are caught/handled by pyupgrade, and not easy to filter with the
+    # module being the filename (with .py removed).
+    "default:invalid escape sequence:DeprecationWarning",
+    # ignore use of unregistered marks, because we use many to test the implementation
+    "ignore::_pytest.warning_types.PytestUnknownMarkWarning",
+]
+
+[tool.autopep8]
+in-place = true
+recursive = true
+aggresive = 2
+experimental = true
+
+[tool.isort]
+profile = "wemake"

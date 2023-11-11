@@ -1,0 +1,4 @@
+[flake8]
+max-line-length = 88
+ignore = WPS111, WPS202, WPS210, WPS211, WPS221, WPS226, WPS305, WPS306, D100, D101, D102, D103, D106, D401, Q000, DAR003, N400, C812
+per-file-ignores = __init__.py:F401
