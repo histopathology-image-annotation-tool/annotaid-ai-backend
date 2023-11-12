@@ -4,13 +4,14 @@ import numpy as np
 import redis
 from fastapi import APIRouter
 
+from src.core.config import settings
 from src.schemas.nuclick import NuclickPredictRequest, NuclickPredictResponse
 from src.utils.utils import load_image
 from src.worker import predict_nuclick_task
 
 router = APIRouter()
 
-r = redis.Redis.from_url('redis://127.0.0.1:6379/0')
+r = redis.Redis.from_url(str(settings.CELERY_BACKEND_URL))
 
 
 @router.post(

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -10,6 +9,7 @@ from imantics import Mask
 from torchvision.models import EfficientNet
 from ultralytics import YOLO
 
+from src.core.config import settings
 from src.models import (
     NuClick_NN,
     predict_mc_first_stage,
@@ -21,8 +21,8 @@ from src.schemas.nuclick import Keypoint
 
 celery_app = Celery(
     __name__,
-    broker='redis://127.0.0.1:6379/0',
-    backend='redis://127.0.0.1:6379/0'
+    broker=str(settings.CELERY_BROKER_URL),
+    backend=str(settings.CELERY_BACKEND_URL)
 )
 celery_app.conf.event_serializer = 'pickle'
 celery_app.conf.task_serializer = 'pickle'
@@ -46,7 +46,7 @@ class NuclickTask(Task):
             model.to(self.device)
 
             model_state = torch.load(
-                Path('./models/nuclick_40x.pth'),
+                settings.NUCLICK_MODEL_PATH,
                 map_location=self.device
             )
             model.load_state_dict(model_state)
@@ -67,7 +67,7 @@ class MCFirstStageTask(Task):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if not self.model:
-            self.model = YOLO('./models/MC_first_stage.pt', task='detect')
+            self.model = YOLO(settings.MC_FIRST_STAGE_MODEL_PATH, task='detect')
 
         return self.run(*args, **kwargs)
 
@@ -84,7 +84,7 @@ class MCSecondStageTask(Task):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if not self.model:
             checkpoint = torch.load(
-                Path('./models/MC_second_stage.pt'),
+                settings.MC_SECOND_STAGE_MODEL_PATH,
                 map_location='cpu'
             )
 
