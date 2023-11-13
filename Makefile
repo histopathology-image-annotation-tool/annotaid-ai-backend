@@ -64,7 +64,7 @@ endif
 
 run_be:
 ifeq ($(env),docker)
-	@docker run -dt -p 8000:8000 --env_file .env annotaid/backend.dev
+	@docker run -dt -p 8000:8000 --env-file .env annotaid/backend.dev
 else ifeq ($(env),local)
 	@uvicorn src.main:app --reload
 else
@@ -75,7 +75,7 @@ endif
 
 run_worker:
 ifeq ($(env),docker)
-	@docker run -dt --env_file .env annotaid/worker.dev
+	@docker run -dt --env-file .env annotaid/worker.dev
 else ifeq ($(env),local)
 	@celery -A src.core.celery worker --pool=solo --loglevel=info
 else

@@ -1,6 +1,6 @@
 services:
   web:
-    image: annotaid/backend
+    image: annotaid/backend:main
     build: !reset null
     restart: always
     healthcheck:
@@ -22,7 +22,7 @@ services:
       - annotaid-be
 
   celery_worker:
-    image: annotaid/worker
+    image: annotaid/worker:main
     build: !reset null
     restart: always
     deploy:
