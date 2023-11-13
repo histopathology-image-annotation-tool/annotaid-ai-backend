@@ -33,8 +33,6 @@ SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y \
-    libgl1 \
-    libglib2.0-0 \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
@@ -47,7 +45,7 @@ COPY poetry.lock pyproject.toml /code/
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     poetry version \
     && poetry run pip install -U pip \
-    && poetry install --no-root --only main --no-interaction
+    && poetry install --no-root --only main,api --no-interaction
 
 # Swith to ML-API-USER
 USER ml-api-user

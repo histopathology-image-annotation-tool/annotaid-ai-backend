@@ -5,10 +5,10 @@ from celery.result import AsyncResult
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from src.core.celery import celery_app
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.mc import MCPredictRequest, MCPredictResponse, MitosisLabel
-from src.utils.utils import load_image
-from src.worker import predict_mc_task
+from src.utils.api import load_image
 
 router = APIRouter()
 
@@ -26,10 +26,10 @@ async def predict_mc(request: MCPredictRequest) -> AsyncTaskResponse:
     offset = [request.offset.x, request.offset.y] \
         if request.offset is not None else [0, 0]
 
-    task = predict_mc_task.delay(
-        image=image,
-        offset=offset
-    )
+    task = celery_app.send_task('src.celery.mc.tasks.predict_mc_task', kwargs={
+        'image': image,
+        'offset': offset
+    })
 
     return {'task_id': task.task_id, 'status': task.status}
 
@@ -68,7 +68,7 @@ async def get_mc_result(task_id: uuid.UUID) -> MCPredictResponse:
             'height': y2 - y1
         }
 
-    return {  # type: ignore
+    return {
         'mitosis': [
             {
                 'bbox': _transform_bbox(res['bbox']),

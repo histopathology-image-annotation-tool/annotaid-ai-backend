@@ -1,0 +1,39 @@
+services:
+  web:
+    image: annotaid/backend
+    build: !reset null
+    restart: always
+    healthcheck:
+      test: wget --no-verbose -O /dev/null --tries=1 http://localhost:8080/ || exit 1
+      interval: 1s
+      timeout: 5s
+    networks:
+      - annotaid-be
+
+  redis:
+    image: redis:alpine3.18
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - annotaid-be
+
+  celery_worker:
+    image: annotaid/worker
+    build: !reset null
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - annotaid-be
+
+networks:
+  annotaid-be:

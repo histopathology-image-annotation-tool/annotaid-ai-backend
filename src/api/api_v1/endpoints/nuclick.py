@@ -4,10 +4,10 @@ import numpy as np
 import redis
 from fastapi import APIRouter
 
+from src.core.celery import celery_app
 from src.core.config import settings
 from src.schemas.nuclick import NuclickPredictRequest, NuclickPredictResponse
-from src.utils.utils import load_image
-from src.worker import predict_nuclick_task
+from src.utils.api import load_image
 
 router = APIRouter()
 
@@ -23,11 +23,14 @@ async def predict_nuclick(request: NuclickPredictRequest) -> NuclickPredictRespo
     image = await load_image(request.image)
     image = np.array(image)
 
-    task = predict_nuclick_task.delay(
-        image=image,
-        keypoints=request.keypoints,
-        offset=(0, 0) if request.offset is None
-        else (request.offset.x, request.offset.y)
+    task = celery_app.send_task(
+        'src.celery.nuclick.tasks.predict_nuclick_task',
+        kwargs={
+            'image': image,
+            'keypoints': request.keypoints,
+            'offset': (0, 0) if request.offset is None
+            else (request.offset.x, request.offset.y)
+        }
     )
 
     while True:

@@ -54,6 +54,8 @@ RUN /code/scripts/download_mc_weights.sh
 # Uninstall curl
 RUN apt remove -y curl
 
+WORKDIR /code
+
 RUN pip install "poetry==$POETRY_VERSION"
 
 COPY poetry.lock pyproject.toml /code/
@@ -61,7 +63,7 @@ COPY poetry.lock pyproject.toml /code/
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
     poetry version \
     && poetry run pip install -U pip \
-    && poetry install --no-root --only main --no-interaction
+    && poetry install --no-root --only main,celery --no-interaction
 
 # Swith to ML-API-USER
 USER ml-api-user
@@ -70,4 +72,4 @@ COPY src/ /code/src
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0"]
+CMD ["celery", "-A", "src.core.celery", "worker", "--pool", "solo", "--loglevel", "info"]

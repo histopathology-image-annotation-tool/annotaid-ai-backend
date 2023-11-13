@@ -40,22 +40,70 @@ else
 	./scripts/download_mc_weights.sh
 endif
 
-build:
-	@docker build . -f Dockerfile.dev -t nuclick_demo
+build_be:
+ifeq ($(env),dev)
+	@docker build . -f ./docker/backend.dockerfile -t annotaid/backend.dev
+else ifeq ($(env),prod)
+	@docker build . -f ./docker/backend.dockerfile -t annotaid/backend
+else
+	@echo "Invalid arguments, supported only: dev, prod"
+	@echo "Examples:"
+	@echo " make build_be env=dev"
+endif
 
-build_prod:
-	@docker build . -f Dockerfile.prod -t nuclick_demo
+build_worker:
+ifeq ($(env),dev)
+	@docker build . -f /docker/worker.dockerfile -t annotaid/worker.dev
+else ifeq ($(env),prod)
+	@docker build . -f /docker/worker.dockerfile -t annotaid/worker
+else
+	@echo "Invalid arguments, supported only: dev, prod"
+	@echo "Examples:"
+	@echo " make build_worker env=dev"
+endif
+
+run_be:
+ifeq ($(env),docker)
+	@docker run -dt -p 8000:8000 --env_file .env annotaid/backend.dev
+else ifeq ($(env),local)
+	@uvicorn src.main:app --reload
+else
+	@echo "Invalid arguments, supported only: docker, local"
+	@echo "Examples:"
+	@echo " make run_be env=dev"
+endif
+
+run_worker:
+ifeq ($(env),docker)
+	@docker run -dt --env_file .env annotaid/worker.dev
+else ifeq ($(env),local)
+	@celery -A src.core.celery worker --pool=solo --loglevel=info
+else
+	@echo "Invalid arguments, supported only: docker, local"
+	@echo "Examples:"
+	@echo " make run_worker env=docker"
+endif
+
+run_redis:
+	@docker run -p 6379:6379 --name redis -d redis
 
 run:
-	@docker run -p 8000:8000 -dt nuclick_demo
+ifeq ($(env),prod)
+	@docker-compose -f ./docker/docker-compose.dev.yml -f ./docker/docker-compose.prod.yml up
+else
+	@docker-compose -f ./docker/docker-compose.dev.yml up
+endif
 
 .PHONY: help
 help:
-	@echo "Commands        :"
-	@echo "venv            : creates a virtual environment."
-	@echo "activate        : activates the virtual environment"
+	@echo "Commands                :"
+	@echo "venv                    : creates a virtual environment."
+	@echo "activate                : activates the virtual environment"
 	@echo "download_nuclick_weights: downloads NuClick weights"
-	@echo "download_mc_weights: downloads MC weights"
-	@echo "build: builds dev docker image"
-	@echo "build_prod: builds prod docker image"
-	@echo "run: runs docker image"
+	@echo "download_mc_weights     : downloads MC weights"
+	@echo "build_be                : builds backend"
+	@echo "build_worker            : builds celery worker"
+	@echo "run_be                  : runs backend"
+	@echo "run_worker              : runs celery worker"
+	@echo "run_redis               : runs redis docker image"
+	@echo "run                     : runs docker-compose"
