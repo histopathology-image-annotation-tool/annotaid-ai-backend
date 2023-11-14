@@ -6,6 +6,8 @@ from src.core.config import settings
 
 app = FastAPI()
 
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
@@ -14,5 +16,3 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-app.include_router(api_router, prefix=settings.API_V1_STR)
