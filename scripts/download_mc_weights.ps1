@@ -6,10 +6,9 @@ if (-not (Test-Path $directoryPath)) {
     New-Item -Path $directoryPath -ItemType Directory -Force
 }
 
-# NuClick weights download URL
+# MC weights download URL
 $url_first_stage = "https://docs.google.com/uc?export=download&id=1DDEfvJvhgjh3PXHRHW7pql_Lcmodkpri&confirm=t"
 $url_second_stage = "https://docs.google.com/uc?export=download&id=1r8S42ksZgx0Cr1maBAaeQbPTOeUEWvFy&confirm=t"
-
 
 $fileNameFirstStage = "MC_first_stage.pt"
 $fileFirstStagePath = Join-Path -Path $directoryPath -ChildPath $fileNameFirstStage

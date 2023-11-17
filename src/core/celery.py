@@ -11,4 +11,4 @@ celery_app.conf.task_serializer = 'pickle'
 celery_app.conf.result_serializer = 'pickle'
 celery_app.conf.accept_content = ['application/json', 'application/x-python-serialize']
 
-celery_app.autodiscover_tasks(['src.celery.nuclick', 'src.celery.mc'])
+celery_app.autodiscover_tasks(['src.celery.nuclick', 'src.celery.mc', 'src.celery.np'])

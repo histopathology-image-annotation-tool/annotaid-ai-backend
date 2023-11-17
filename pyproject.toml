@@ -40,6 +40,7 @@ patchify = "^0.2.3"
 monai = "^1.3.0"
 ultralytics = "^8.0.208"
 dill = "^0.3.7"
+efficientnet-pytorch = "^0.7.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"

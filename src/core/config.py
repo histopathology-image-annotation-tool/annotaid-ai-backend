@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     NUCLICK_MODEL_PATH: Path
     MC_FIRST_STAGE_MODEL_PATH: Path
     MC_SECOND_STAGE_MODEL_PATH: Path
+    NP_MODEL_PATH: Path
 
 
 settings = Settings()

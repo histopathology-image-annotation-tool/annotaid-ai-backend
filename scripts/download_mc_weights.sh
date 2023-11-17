@@ -6,7 +6,7 @@ directoryPath="models/"
 # Create the directory if it doesn't exist
 mkdir -p $directoryPath
 
-# first-stage weights download URL
+# MC weights download URL
 url_first_stage="https://docs.google.com/uc?export=download&id=1DDEfvJvhgjh3PXHRHW7pql_Lcmodkpri&confirm=t"
 url_second_stage="https://docs.google.com/uc?export=download&id=1r8S42ksZgx0Cr1maBAaeQbPTOeUEWvFy&confirm=t"
 

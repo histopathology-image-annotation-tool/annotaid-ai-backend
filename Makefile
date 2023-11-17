@@ -40,6 +40,14 @@ else
 	./scripts/download_mc_weights.sh
 endif
 
+# Download NP weights
+download_np_weights:
+ifeq ($(OS),Windows_NT)
+	powershell .\scripts\download_np_weights.ps1
+else
+	./scripts/download_np_weights.sh
+endif
+
 build_be:
 ifeq ($(env),dev)
 	@docker build . -f ./docker/backend.dockerfile -t annotaid/backend.dev
@@ -101,6 +109,7 @@ help:
 	@echo "activate                : activates the virtual environment"
 	@echo "download_nuclick_weights: downloads NuClick weights"
 	@echo "download_mc_weights     : downloads MC weights"
+	@echo "download_np_weights     : downloads NP weights"
 	@echo "build_be                : builds backend"
 	@echo "build_worker            : builds celery worker"
 	@echo "run_be                  : runs backend"
