@@ -8,7 +8,7 @@ from .definitions import MCFirstStageTask, MCSecondStageTask
 
 
 @celery_app.task(
-    ignore_result=False,
+    ignore_result=True,
     bind=True,
     base=MCFirstStageTask
 )
@@ -23,7 +23,7 @@ def predict_mc_first_stage_task(
 
 
 @celery_app.task(
-    ignore_result=False,
+    ignore_result=True,
     bind=True,
     base=MCSecondStageTask
 )
@@ -49,7 +49,6 @@ def apply_offset_to_bboxes(
 
     for result in mitosis_predictions:
         result['bbox'] += bbox_offset
-        print(result['bbox'])
 
     return mitosis_predictions
 

@@ -56,6 +56,9 @@ async def get_mc_result(task_id: uuid.UUID) -> MCPredictResponse:
         }, status_code=202)
 
     results = task.get().get()
+
+    for children_task in task.children:
+        children_task.forget()
     task.forget()
 
     def _transform_bbox(bbox: np.ndarray) -> dict[str, float]:

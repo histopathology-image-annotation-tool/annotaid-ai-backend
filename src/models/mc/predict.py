@@ -35,7 +35,11 @@ def predict_first_stage(
     for row_index in range(n_rows):
         for col_index in range(n_cols):
             patch = patches[row_index, col_index].squeeze()
-            patch = normalizer(patch)
+
+            try:
+                patch = normalizer(patch)
+            except ValueError:
+                continue
 
             prediction: Results = model.predict(patch)[0].cpu()
 
@@ -124,14 +128,20 @@ def predict_second_stage(
         )
         for bbox in bboxes
     )
-    patches = (
-        basic_transforms(image=patch)['image']
-        for patch in patches
-    )
+    # patches = (
+    #     basic_transforms(image=patch)['image']
+    #     for patch in patches
+    # )
 
     results: list[MitosisPrediction] = []
 
     for patch, bbox in zip(patches, bboxes):
+        try:
+            patch = stain_normalize(image=patch)['image']
+            patch = basic_transforms(image=patch)['image']
+        except ValueError:
+            continue
+
         tensor_patch: torch.Tensor = patch[None, ...]
         tensor_patch = tensor_patch.to(device)
 
