@@ -7,25 +7,32 @@ from fastapi.responses import JSONResponse
 
 from src.core.celery import celery_app
 from src.schemas.celery import AsyncTaskResponse
-from src.schemas.np import NPLabel, NPPredictRequest, NPPredictResponse
+from src.schemas.sam import SAMPredictRequest, SAMPredictResponse
+from src.schemas.shared import BoundingBox
 from src.utils.api import load_image
 
 router = APIRouter()
 
 
 @router.post(
-    '/models/np',
+    '/models/sam',
     response_model=AsyncTaskResponse,
-    status_code=202
 )
-async def predict_np(request: NPPredictRequest) -> AsyncTaskResponse:
-    """Endpoint for initiating a nuclear pleomorphism classification task."""
+async def predict_sam(request: SAMPredictRequest) -> AsyncTaskResponse:
+    """Endpoint for the SAM segmentation."""
     image = await load_image(request.image)
     image = np.array(image)
 
-    task = celery_app.send_task('src.celery.np.tasks.predict_np_task', kwargs={
-        'image': image
-    })
+    def convert_bbox_to_xyxy(bbox: BoundingBox) -> np.ndarray:
+        return np.array([bbox.x, bbox.y, bbox.x + bbox.width, bbox.y + bbox.height])
+
+    task = celery_app.send_task(
+        'src.celery.sam.tasks.predict_sam_task',
+        kwargs={
+            'image': image,
+            'bboxes': [convert_bbox_to_xyxy(bbox) for bbox in request.bboxes]
+        }
+    )
 
     return {
         'task_id': task.task_id,
@@ -34,14 +41,16 @@ async def predict_np(request: NPPredictRequest) -> AsyncTaskResponse:
 
 
 @router.get(
-    '/models/np',
-    response_model=NPPredictResponse,
+    '/models/sam',
+    response_model=SAMPredictResponse,
     responses={
         202: {'model': AsyncTaskResponse}
     }
 )
-async def get_np_result(task_id: uuid.UUID) -> NPPredictResponse:
-    """Endpoint for retrieving the result of a nuclear pleomorphism classification task.
+async def get_predict_sam_result(
+    task_id: uuid.UUID
+) -> SAMPredictResponse:
+    """Endpoint for retrieving the result of a nuclei segmentation task.
     If the provided task_id doesn't belong to any submitted task,
     the PENDING status is returned.
     The task result is deleted immediately after the first read.
@@ -55,21 +64,8 @@ async def get_np_result(task_id: uuid.UUID) -> NPPredictResponse:
         }, status_code=202)
 
     result = task.get()
-
-    for children_task in task.children:
-        children_task.forget()
     task.forget()
 
-    def _map_label_to_class(label: int) -> NPLabel:
-        labels = {
-            None: NPLabel.undetermined,
-            0: NPLabel.score_1,
-            1: NPLabel.score_2,
-            2: NPLabel.score_3
-        }
-
-        return labels[label]
-
     return {
-        'label': _map_label_to_class(result)
+        'segmented_object': result
     }

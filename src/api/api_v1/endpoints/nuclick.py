@@ -1,12 +1,21 @@
 import asyncio
+import uuid
 
 import numpy as np
 import redis
+from celery.result import AsyncResult
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from src.core.celery import celery_app
 from src.core.config import settings
-from src.schemas.nuclick import NuclickPredictRequest, NuclickPredictResponse
+from src.schemas.celery import AsyncTaskResponse
+from src.schemas.nuclick import (
+    Keypoint,
+    NuclickBBoxDensePredictRequest,
+    NuclickPredictRequest,
+    NuclickPredictResponse,
+)
 from src.utils.api import load_image
 
 router = APIRouter()
@@ -15,7 +24,7 @@ r = redis.Redis.from_url(str(settings.CELERY_BACKEND_URL))
 
 
 @router.post(
-    '/models/nuclick/predict',
+    '/models/nuclick',
     response_model=NuclickPredictResponse,
 )
 async def predict_nuclick(request: NuclickPredictRequest) -> NuclickPredictResponse:
@@ -37,6 +46,75 @@ async def predict_nuclick(request: NuclickPredictRequest) -> NuclickPredictRespo
         if r.exists(f'celery-task-meta-{task.task_id}'):
             break
         await asyncio.sleep(0.3)
+
+    result = task.get()
+    task.forget()
+
+    return {
+        'segmented_nuclei': result
+    }
+
+
+@router.post(
+    '/models/nuclick/bbox-dense',
+    response_model=AsyncTaskResponse
+)
+async def predict_bbox_dense_annotation(
+    request: NuclickBBoxDensePredictRequest
+) -> AsyncTaskResponse:
+    """Endpoint for the nuclei segmentation defined by bounding boxes.
+    The endpoint uses NuClick for the dense prediction and it simulates the user click
+    by using the center of the bounding box.
+    """
+    image = await load_image(request.image)
+    image = np.array(image)
+
+    keypoints = [
+        Keypoint(
+            x=bbox.x + bbox.width / 2,
+            y=bbox.y + bbox.height / 2
+        )
+        for bbox in request.bboxes
+    ]
+
+    task = celery_app.send_task(
+        'src.celery.nuclick.tasks.predict_nuclick_task',
+        kwargs={
+            'image': image,
+            'keypoints': keypoints,
+            'offset': (0, 0) if request.offset is None
+            else (request.offset.x, request.offset.y)
+        }
+    )
+
+    return {
+        'task_id': task.task_id,
+        'status': task.status
+    }
+
+
+@router.get(
+    '/models/nuclick/bbox-dense',
+    response_model=NuclickPredictResponse,
+    responses={
+        202: {'model': AsyncTaskResponse}
+    }
+)
+async def get_predict_bbox_dense_annotation_result(
+    task_id: uuid.UUID
+) -> NuclickPredictResponse:
+    """Endpoint for retrieving the result of a nuclei segmentation task.
+    If the provided task_id doesn't belong to any submitted task,
+    the PENDING status is returned.
+    The task result is deleted immediately after the first read.
+    """
+    task = AsyncResult(str(task_id))
+
+    if not task.ready():
+        return JSONResponse({
+            'task_id': str(task_id),
+            'status': task.state
+        }, status_code=202)
 
     result = task.get()
     task.forget()

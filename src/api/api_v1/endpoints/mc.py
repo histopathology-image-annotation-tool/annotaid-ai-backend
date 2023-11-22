@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.post(
-    '/models/mc/predict',
+    '/models/mc',
     response_model=AsyncTaskResponse,
     status_code=202
 )
@@ -35,7 +35,7 @@ async def predict_mc(request: MCPredictRequest) -> AsyncTaskResponse:
 
 
 @router.get(
-    '/models/mc/result',
+    '/models/mc',
     response_model=MCPredictResponse,
     responses={
         202: {'model': AsyncTaskResponse}

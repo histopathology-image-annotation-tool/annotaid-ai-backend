@@ -8,13 +8,7 @@ from pydantic import BaseModel, Field, NonNegativeFloat, field_validator
 from src.schemas.nuclick import Keypoint
 from src.utils.utils import read_file
 
-
-class BoundingBox(BaseModel):
-    """Represents a 2D bounding box."""
-    x: NonNegativeFloat
-    y: NonNegativeFloat
-    width: NonNegativeFloat
-    height: NonNegativeFloat
+from .shared import BoundingBox
 
 
 class MitosisLabel(str, Enum):
