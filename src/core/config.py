@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AnyHttpUrl, RedisDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,10 +26,12 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: RedisDsn
     CELERY_BACKEND_URL: RedisDsn
 
-    NUCLICK_MODEL_PATH: Path
-    MC_FIRST_STAGE_MODEL_PATH: Path
-    MC_SECOND_STAGE_MODEL_PATH: Path
-    NP_MODEL_PATH: Path
+    NUCLICK_MODEL_PATH: Path = Path('./models/nuclick_40x.pth')
+    MC_FIRST_STAGE_MODEL_PATH: Path = Path('./models/MC_first_stage.pt')
+    MC_SECOND_STAGE_MODEL_PATH: Path = Path('./models/MC_second_stage.pt')
+    NP_MODEL_PATH: Path = Path('./models/NP_model.pt')
+    SAM_MODEL_PATH: Path = Path('./models/sam_vit_b_01ec64.pth')
+    SAM_MODEL_VARIANT: Literal['vit_h', 'vit_b', 'vit_l'] = 'vit_b'
 
 
 settings = Settings()

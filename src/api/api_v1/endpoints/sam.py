@@ -1,36 +1,45 @@
+import asyncio
 import uuid
+from collections import defaultdict
+from functools import reduce
+from typing import Annotated, Any
 
 import numpy as np
+import redis
 from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
 
 from src.core.celery import celery_app
+from src.core.config import settings
 from src.schemas.celery import AsyncTaskResponse
-from src.schemas.sam import SAMPredictRequest, SAMPredictResponse
+from src.schemas.sam import (
+    GetSAMEmbeddingsRequest,
+    SAMKeypoint,
+    SAMPredictRequest,
+    SAMPredictResponse,
+)
 from src.schemas.shared import BoundingBox
 from src.utils.api import load_image
 
 router = APIRouter()
 
+r = redis.Redis.from_url(str(settings.CELERY_BACKEND_URL))
+
 
 @router.post(
-    '/models/sam',
+    '/models/sam/embeddings',
     response_model=AsyncTaskResponse,
 )
-async def predict_sam(request: SAMPredictRequest) -> AsyncTaskResponse:
-    """Endpoint for the SAM segmentation."""
+async def get_sam_embeddings(request: GetSAMEmbeddingsRequest) -> AsyncTaskResponse:
+    """Endpoint for the extraction of SAM encoder embeddings."""
     image = await load_image(request.image)
     image = np.array(image)
 
-    def convert_bbox_to_xyxy(bbox: BoundingBox) -> np.ndarray:
-        return np.array([bbox.x, bbox.y, bbox.x + bbox.width, bbox.y + bbox.height])
-
     task = celery_app.send_task(
-        'src.celery.sam.tasks.predict_sam_task',
+        'src.celery.sam.tasks.get_sam_embeddings_task',
         kwargs={
             'image': image,
-            'bboxes': [convert_bbox_to_xyxy(bbox) for bbox in request.bboxes]
         }
     )
 
@@ -41,20 +50,19 @@ async def predict_sam(request: SAMPredictRequest) -> AsyncTaskResponse:
 
 
 @router.get(
-    '/models/sam',
-    response_model=SAMPredictResponse,
+    '/models/sam/embeddings',
+    response_model=AsyncTaskResponse,
     responses={
         202: {'model': AsyncTaskResponse}
     }
 )
-async def get_predict_sam_result(
+async def get_sam_embeddings_result(
     task_id: uuid.UUID
-) -> SAMPredictResponse:
-    """Endpoint for retrieving the result of a nuclei segmentation task.
+) -> AsyncTaskResponse:
+    """Endpoint for retrieving the status for the extraction of SAM encoder embeddings.
+    If the embeddings are ready to use, the SUCCESS status is returned.
     If the provided task_id doesn't belong to any submitted task,
-    the PENDING status is returned.
-    The task result is deleted immediately after the first read.
-    """
+    the PENDING status is returned."""
     task = AsyncResult(str(task_id))
 
     if not task.ready():
@@ -63,9 +71,72 @@ async def get_predict_sam_result(
             'status': task.state
         }, status_code=202)
 
-    result = task.get()
-    task.forget()
-
     return {
-        'segmented_object': result
+        'task_id': str(task_id),
+        'status': task.state
+    }
+
+
+@router.post(
+    '/models/sam',
+    response_model=SAMPredictResponse
+)
+async def predict_sam(request: Annotated[
+    SAMPredictRequest,
+    Body(
+        openapi_examples=SAMPredictRequest.model_config
+        ['json_schema_extra']['openapi_examples']
+    )
+]) -> SAMPredictResponse:
+    """Endpoint for the SAM segmentation."""
+    def _transform_keypoints(
+        acc: defaultdict[str, list[Any]],
+        keypoint: SAMKeypoint
+    ) -> defaultdict[str, list[Any]]:
+        acc['coords'].append([keypoint.keypoint.x, keypoint.keypoint.y])
+        acc['labels'].append(1 if keypoint.label == 'foreground' else 0)
+
+        return acc
+
+    def _convert_to_xyxy(bbox: BoundingBox) -> np.ndarray:
+        return np.array([bbox.x, bbox.y, bbox.x + bbox.width, bbox.y + bbox.height])
+
+    point_coords: np.ndarray | None = None
+    point_labels: np.ndarray | None = None
+
+    if request.keypoints is not None:
+        transformed_keypoints: defaultdict[str, list[Any]] = reduce(
+            _transform_keypoints,
+            request.keypoints,
+            defaultdict(list)
+        )
+
+        point_coords = np.array(transformed_keypoints['coords'])
+        point_labels = np.array(transformed_keypoints['labels'])
+
+    offset = [request.offset.x, request.offset.y] \
+        if request.offset is not None else [0, 0]
+
+    task = celery_app.send_task(
+        'src.celery.sam.tasks.predict_sam',
+        kwargs={
+            'embeddings_task_id': request.embeddings_task_id,
+            'previous_predict_task_id': request.previous_predict_task_id,
+            'point_coords': point_coords,
+            'point_labels': point_labels,
+            'bbox': _convert_to_xyxy(request.bbox)
+            if request.bbox is not None else None,
+            'offset': offset
+        }
+    )
+
+    while True:
+        if r.exists(f'celery-task-meta-{task.task_id}'):
+            break
+        await asyncio.sleep(0.3)
+
+    result = task.get()
+
+    return {  # type: ignore
+        'segmented_objects': result['segmented_objects'],
     }

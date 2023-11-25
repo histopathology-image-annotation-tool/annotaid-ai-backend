@@ -1,4 +1,4 @@
-from pydantic import BaseModel, NonNegativeFloat
+from pydantic import BaseModel, NonNegativeFloat, PositiveFloat
 
 
 class Keypoint(BaseModel):
@@ -11,5 +11,5 @@ class BoundingBox(BaseModel):
     """Represents a 2D bounding box."""
     x: NonNegativeFloat
     y: NonNegativeFloat
-    width: NonNegativeFloat
-    height: NonNegativeFloat
+    width: PositiveFloat
+    height: PositiveFloat

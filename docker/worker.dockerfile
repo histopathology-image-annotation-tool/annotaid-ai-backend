@@ -51,10 +51,15 @@ COPY scripts/download_mc_weights.sh /code/scripts/
 RUN chmod +x /code/scripts/download_mc_weights.sh
 RUN /code/scripts/download_mc_weights.sh
 
-# Download the NP models
+# Download the NP model
 COPY scripts/download_np_weights.sh /code/scripts/
 RUN chmod +x /code/scripts/download_np_weights.sh
 RUN /code/scripts/download_np_weights.sh
+
+# Download the SAM model
+COPY scripts/download_sam_weights.sh /code/scripts/
+RUN chmod +x /code/scripts/download_sam_weights.sh
+RUN /code/scripts/download_sam_weights.sh
 
 # Uninstall curl
 RUN apt remove -y curl
