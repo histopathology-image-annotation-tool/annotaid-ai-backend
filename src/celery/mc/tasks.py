@@ -1,7 +1,9 @@
 import numpy as np
+from monai.apps.pathology.transforms.stain.array import NormalizeHEStains
+from sahi.predict import get_sliced_prediction
 
 from src.core.celery import celery_app
-from src.models import predict_mc_first_stage, predict_mc_second_stage
+from src.models import predict_mc_second_stage
 from src.models.mc.custom_types import MitosisPrediction
 
 from .definitions import MCFirstStageTask, MCSecondStageTask
@@ -16,10 +18,29 @@ def predict_mc_first_stage_task(
     self: MCFirstStageTask,
     image: np.ndarray
 ) -> list[np.ndarray]:
-    return predict_mc_first_stage(
-        model=self.model,
-        image=image
+    candidates: list[np.ndarray] = []
+
+    try:
+        normalizer = NormalizeHEStains()
+        normalized_image = normalizer(image)
+    except ValueError:
+        return candidates
+
+    predicted_objects = get_sliced_prediction(
+        image=normalized_image,
+        detection_model=self.model,
+        slice_width=512,
+        slice_height=512,
+        overlap_width_ratio=0.25,
+        overlap_height_ratio=0.25,
     )
+
+    candidates.extend([
+        np.array(object.bbox.to_xyxy(), dtype=np.int32)
+        for object in predicted_objects.object_prediction_list
+    ])
+
+    return candidates
 
 
 @celery_app.task(
