@@ -139,4 +139,5 @@ async def predict_sam(request: Annotated[
 
     return {  # type: ignore
         'segmented_objects': result['segmented_objects'],
+        "previous_predict_task_id": task.task_id
     }

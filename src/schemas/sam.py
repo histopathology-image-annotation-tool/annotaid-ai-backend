@@ -111,6 +111,7 @@ class SAMPredictRequest(BaseModel):
 class SAMPredictResponse(BaseModel):
     """Represents the response containing segmented objects."""
     segmented_objects: list[list[Keypoint]]
+    previous_predict_task_id: uuid.UUID
 
 
 class GetSAMEmbeddingsRequest(BaseModel):
