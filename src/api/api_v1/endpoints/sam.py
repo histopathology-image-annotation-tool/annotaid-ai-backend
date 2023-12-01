@@ -126,7 +126,8 @@ async def predict_sam(request: Annotated[
             'point_labels': point_labels,
             'bbox': _convert_to_xyxy(request.bbox)
             if request.bbox is not None else None,
-            'offset': offset
+            'offset': offset,
+            'postprocessing': request.postprocessing
         }
     )
 

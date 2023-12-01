@@ -2,7 +2,7 @@ import uuid
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt
 
 from src.utils.utils import read_file
 
@@ -23,6 +23,38 @@ class SAMKeypoint(BaseModel):
     """Represents the SAM keypoint."""
     keypoint: Keypoint
     label: SAMKeypointLabel
+
+
+class SAMPredictRequestPostprocessing(BaseModel):
+    """Represents SAM model postprocessing parameters."""
+    multimask_output: bool | None = Field(
+        default=None,
+        description="When True, SAM predicts 3 masks with confidence scores. "
+        "The mask with highest confidence is selected for processing. "
+        "Set to True if the single point is provided; False for multiple points. "
+        "When null, parameter is set to False, if the bbox/multiple points is provided."
+    )
+    min_object_size: PositiveInt | None = Field(
+        default=10,
+        description="Remove objects smaller than specified size. "
+        "See: https://scikit-image.org/docs/stable/api/skimage.morphology.html#"
+        "skimage.morphology.remove_small_objects. "
+        "When null, the operation is omitted."
+    )
+    remove_holes_smaller_than: PositiveInt | None = Field(
+        default=30,
+        description="Remove holes smaller than specified size. "
+        "See: https://scikit-image.org/docs/stable/api/skimage.morphology.html#"
+        "skimage.morphology.remove_small_holes. "
+        "When null, the operation is omitted."
+    )
+    reconstruction: bool | None = Field(
+        default=True,
+        description="Perform morphological reconstruction of an image. "
+        "See: https://scikit-image.org/docs/stable/api/skimage.morphology.html#"
+        "skimage.morphology.reconstruction. "
+        "When null, the operation is omitted."
+    )
 
 
 class SAMPredictRequest(BaseModel):
@@ -55,6 +87,11 @@ class SAMPredictRequest(BaseModel):
         description="Coordinates of the user clicks to indicate guidance signals "
         "for the segmentation. When refining the previous segmented objects, all used "
         "keypoints from the beginning of the segmentation process must be provided."
+    )
+    postprocessing: SAMPredictRequestPostprocessing | None = Field(
+        default=SAMPredictRequestPostprocessing(),
+        description="Mask postprocessing parameters. When the config is not provided "
+        "the default config is used."
     )
 
     model_config = ConfigDict(
