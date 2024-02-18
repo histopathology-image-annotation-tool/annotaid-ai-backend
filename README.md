@@ -1,3 +1,5 @@
+[![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
+
 # AnnotAid AI Backend
 This repository contains a FastAPI backend with celery for AnnotAid. The backend is wrapped in a Docker container for easy deployment.
 
@@ -57,3 +59,9 @@ make run env=prod
 ## Documentation
 * [Swagger](http://localhost:8000/docs)
 * [Redoc](http://localhost:8000/redoc)
+
+## License
+This work is licensed under a
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
+
+[![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
