@@ -34,6 +34,16 @@ make download_nuclick_weights
 make download_mc_weights
 ```
 
+#### Download NP Weights:
+```
+make download_np_weights
+```
+
+#### Download SAM Weights:
+```
+make download_sam_weights
+```
+
 #### Run the project
 ```
 make run_be env=local
