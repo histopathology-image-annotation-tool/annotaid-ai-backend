@@ -11,6 +11,8 @@ from src.core.config import settings
 
 
 class MCFirstStageTask(Task):
+    """The first stage of the mitotic count prediction pipeline.
+    This stage is reposible for detecting candidates in the input image."""
     abstract = True
 
     def __init__(self) -> None:
@@ -34,6 +36,9 @@ class MCFirstStageTask(Task):
 
 
 class MCSecondStageTask(Task):
+    """The second stage of the mitotic count prediction pipeline.
+    This stage is responsible for classifying the candidates detected
+    in the first stage."""
     abstract = True
 
     def __init__(self) -> None:

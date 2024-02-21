@@ -26,6 +26,14 @@ def get_sam_embeddings_task(
     self: SAMTask,
     image: np.ndarray,
 ) -> SamPredictorConfig:
+    """Gets the SAM encoder embeddings for the input image.
+
+    Args:
+        image (np.ndarray): The input image.
+
+    Returns:
+        SamPredictorConfig: The configuration for the SAM predictor.
+    """
     predictor = SamPredictor(self.model)
 
     predictor.set_image(image)
@@ -57,6 +65,24 @@ def predict_sam(
     offset: tuple[int, int],
     postprocessing: SAMPredictRequestPostprocessing | None
 ) -> SamPredictTaskResult:
+    """Predicts the segmented objects using the SAM model.
+
+    Args:
+        embeddings_task_id (uuid.UUID): The task ID with the stored embeddings.
+        previous_predict_task_id (uuid.UUID | None): The task ID for the previous
+        predict task. If provided, the low resolution segmentation mask of the previous
+        prediction is fed to the model to help refine the segmentation result.
+        point_coords (np.ndarray | None): The input coordinates of the user clicks.
+        point_labels (np.ndarray | None): The labels of the user clicks
+        (foreground / background).
+        bbox (np.ndarray | None): The bounding box from which the model
+        tries to segment objects.
+        offset (tuple[int, int]): The offset to be added to the segmented objects.
+        postprocessing (SAMPredictRequestPostprocessing | None): The postprocessing
+        configuration.
+    Returns:
+        SamPredictTaskResult: The result of the SAM prediction task.
+    """
     embeddings_task = AsyncResult(str(embeddings_task_id))
     previous_predict_task = AsyncResult(str(previous_predict_task_id))
 

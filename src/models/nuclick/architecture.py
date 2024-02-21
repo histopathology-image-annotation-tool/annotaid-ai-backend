@@ -5,6 +5,8 @@ from .layers import Conv_Bn_Relu, Multiscale_Conv_Block, Residual_Conv
 
 
 class NuClick_NN(nn.Module):
+    """NuClick model."""
+
     def __init__(
         self,
         n_channels: int,

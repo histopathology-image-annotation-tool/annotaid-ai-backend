@@ -18,6 +18,13 @@ def predict_mc_first_stage_task(
     self: MCFirstStageTask,
     image: np.ndarray
 ) -> list[np.ndarray]:
+    """Gets the mitotic candidates.
+
+    Args:
+        image (np.ndarray): The input image.
+    Returns:
+        list[np.ndarray]: The bounding boxes of the detected candidates.
+    """
     candidates: list[np.ndarray] = []
 
     try:
@@ -53,6 +60,16 @@ def predict_mc_second_stage_task(
     bboxes: list[np.ndarray],
     image: np.ndarray,
 ) -> list[MitosisPrediction]:
+    """
+    Classifies the mitotic candidates.
+
+    Args:
+        bboxes (list[np.ndarray]): The bounding boxes of the detected candidates.
+        image (np.ndarray): The normalized input image.
+
+    Returns:
+        list[MitosisPrediction]: The predictions for the mitotic candidates.
+    """
     return predict_mc_second_stage(
         model=self.model,
         image=image,
@@ -66,6 +83,17 @@ def apply_offset_to_bboxes(
     mitosis_predictions: list[MitosisPrediction],
     offset: tuple[int, int]
 ) -> list[MitosisPrediction]:
+    """Applies offset to the bounding boxes.
+
+    Args:
+        mitosis_predictions (list[MitosisPrediction]): The predictions for the mitotic
+        candidates.
+        offset (tuple[int, int]): The offset to be applied to the bounding boxes.
+
+    Returns:
+        list[MitosisPrediction]: The predictions for the mitotic candidates
+        with the offset applied.
+    """
     bbox_offset = np.array([*offset, *offset], dtype=np.int32)
 
     for result in mitosis_predictions:
@@ -79,6 +107,14 @@ def predict_mc_task(
     image: np.ndarray,
     offset: tuple[int, int]
 ) -> list[MitosisPrediction]:
+    """Detects the mitotic and hard-negative mitotic cells in the input image.
+
+    Args:
+        image (np.ndarray): The input image of at least 512x512 pixels.
+        offset (tuple[int, int]): The offset to be applied to the bounding boxes.
+    Returns:
+        list[MitosisPrediction]: The predictions for the mitotic candidates.
+    """
     chain = predict_mc_first_stage_task.s(image=image) | \
         predict_mc_second_stage_task.s(image=image) | \
         apply_offset_to_bboxes.s(offset=offset)

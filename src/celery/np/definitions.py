@@ -8,6 +8,7 @@ from src.core.config import settings
 
 
 class NPPredictTask(Task):
+    """The task for the nuclear pleomorphism prediction pipeline."""
     abstract = True
 
     def __init__(self) -> None:

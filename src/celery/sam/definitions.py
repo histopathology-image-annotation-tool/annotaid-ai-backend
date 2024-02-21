@@ -11,6 +11,7 @@ from src.schemas.shared import Keypoint
 
 
 class SamPredictorConfig(TypedDict):
+    """The configuration for the SAM predictor."""
     original_size: tuple[int, ...]
     input_size: tuple[int, ...]
     features: np.ndarray
@@ -18,11 +19,13 @@ class SamPredictorConfig(TypedDict):
 
 
 class SamPredictTaskResult(TypedDict):
+    """The result of the SAM prediction task."""
     segmented_objects: list[list[Keypoint]]
     low_res_mask: np.ndarray
 
 
 class SAMTask(Task):
+    """The task for the SAM prediction pipeline."""
     abstract = True
 
     def __init__(self) -> None:

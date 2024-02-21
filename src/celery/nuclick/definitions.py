@@ -8,6 +8,7 @@ from src.models import NuClick_NN
 
 
 class NuclickTask(Task):
+    """The task for the NuClick prediction pipeline."""
     abstract = True
 
     def __init__(self) -> None:

@@ -19,6 +19,17 @@ def predict_nuclick_task(
     keypoints: list[Keypoint],
     offset: tuple[int, int]
 ) -> list[list[Keypoint]]:
+    """Segments the nuclei in the input image based on the input keypoints
+    using the NuClick model.
+
+    Args:
+        image (np.ndarray): The input image.
+        keypoints (list[Keypoint]): The user-defined keypoints relative
+        to the top left corner of the image.
+        offset (tuple[int, int]): The offset to be added to the keypoints.
+    Returns:
+        list[list[Keypoint]]: The segmented nuclei in the form of a list of keypoints.
+    """
     self.model.eval()
 
     result = predict_nuclick(

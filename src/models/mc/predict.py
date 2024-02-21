@@ -20,6 +20,14 @@ def predict_first_stage(
     model: YOLO,
     image: np.ndarray,
 ) -> list[np.ndarray]:
+    """Predicts the mitotic candidates in the input image using the first stage model.
+
+    Args:
+        model (YOLO): The first stage model.
+        image (np.ndarray): The input image.
+    Returns:
+        list[np.ndarray]: The bounding boxes of the mitotic candidates.
+    """
     normalizer = NormalizeHEStains()
 
     patches = patchify(
@@ -64,6 +72,15 @@ def _extract_patch_second_stage(
     bbox: np.ndarray,
     patch_size: int = 64
 ) -> np.ndarray:
+    """Extracts a patch from the image centered around the bounding box coordinates.
+
+    Args:
+        image (np.ndarray): The input image.
+        bbox (np.ndarray): The bounding box coordinates.
+        patch_size (int): The size of the patch.
+    Returns:
+        np.ndarray: The extracted patch.
+    """
     image_height, image_width = image.shape[:2]
 
     x1, y1, x2, y2 = bbox
@@ -101,6 +118,17 @@ def predict_second_stage(
     bboxes: list[np.ndarray],
     device: torch.device
 ) -> list[MitosisPrediction]:
+    """Classifies the mitotic candidates in the input image
+    using the second stage model.
+
+    Args:
+        model (EfficientNet): The second stage model.
+        image (np.ndarray): The input image.
+        bboxes (list[np.ndarray]): The bounding boxes of the mitotic candidates.
+        device (torch.device): The device to use for inference.
+    Returns:
+        list[MitosisPrediction]: The classification results.
+    """
     stain_normalize = A.Compose(
         [
             A.Resize(64, 64),
@@ -128,10 +156,6 @@ def predict_second_stage(
         )
         for bbox in bboxes
     )
-    # patches = (
-    #     basic_transforms(image=patch)['image']
-    #     for patch in patches
-    # )
 
     results: list[MitosisPrediction] = []
 

@@ -16,6 +16,15 @@ def predict_nuclear_pleomorphism(
     image: np.ndarray,
     device: torch.device
 ) -> int | None:
+    """Predicts the nuclear pleomorphism score of a given image.
+
+    Args:
+        model (nn.Module): The nuclear pleomorphism model.
+        image (np.ndarray): The input image.
+        device (torch.device): The device to use for the prediction.
+    Returns:
+        int | None: The predicted nuclear pleomorphism score.
+    """
     model.eval()
     model.to(device)
 

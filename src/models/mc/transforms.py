@@ -6,6 +6,8 @@ from monai.apps.pathology.transforms.stain.array import NormalizeHEStains
 
 
 class NormalizeHEStainsWrapper(ImageOnlyTransform):
+    """Wrapper for the NormalizeHEStains class from MONAI."""
+
     def __init__(self, always_apply: bool = True, p: float = 1.0) -> None:
         super().__init__(always_apply, p)
         self.normalizer = NormalizeHEStains()
