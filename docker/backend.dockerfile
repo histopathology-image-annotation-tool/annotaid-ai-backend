@@ -31,7 +31,7 @@ ENV PYTHONFAULTHANDLER=1\
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
-RUN apt-get update && apt-get upgrade -y \
+RUN apt-get update \
     && apt-get install --no-install-recommends -y \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*

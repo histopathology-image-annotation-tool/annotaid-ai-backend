@@ -24,12 +24,20 @@ venv:
 activate:
 	$(ACTIVATE)
 
+# Download all weights
+download_weights:
+ifeq ($(OS),Windows_NT)
+	powershell .\scripts\weights\index.ps1
+else
+	./scripts/weights/index.sh
+endif
+
 # Download NuClick weights
 download_nuclick_weights:
 ifeq ($(OS),Windows_NT)
 	powershell .\scripts\download_nuclick_weights.ps1
 else
-	./scripts/download_nuclick_weights.sh
+	./scripts/weights/download_nuclick_weights.sh
 endif
 
 # Download MC weights
@@ -37,7 +45,7 @@ download_mc_weights:
 ifeq ($(OS),Windows_NT)
 	powershell .\scripts\download_mc_weights.ps1
 else
-	./scripts/download_mc_weights.sh
+	./scripts/weights/download_mc_weights.sh
 endif
 
 # Download NP weights
@@ -45,7 +53,7 @@ download_np_weights:
 ifeq ($(OS),Windows_NT)
 	powershell .\scripts\download_np_weights.ps1
 else
-	./scripts/download_np_weights.sh
+	./scripts/weights/download_np_weights.sh
 endif
 
 # Download SAM weights
@@ -53,7 +61,7 @@ download_sam_weights:
 ifeq ($(OS),Windows_NT)
 	powershell .\scripts\download_sam_weights.ps1
 else
-	./scripts/download_sam_weights.sh
+	./scripts/weights/download_sam_weights.sh
 endif
 
 build_be:
@@ -115,6 +123,7 @@ help:
 	@echo "Commands                :"
 	@echo "venv                    : creates a virtual environment."
 	@echo "activate                : activates the virtual environment"
+	@echo "download_weights        : downloads all weights"
 	@echo "download_nuclick_weights: downloads NuClick weights"
 	@echo "download_mc_weights     : downloads MC weights"
 	@echo "download_np_weights     : downloads NP weights"

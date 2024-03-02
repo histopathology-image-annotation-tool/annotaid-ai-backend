@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.11.6
+ARG PYTHON_VERSION=3.11.8
 
 FROM python:${PYTHON_VERSION}-slim-bookworm as base
 
@@ -31,7 +31,7 @@ ENV PYTHONFAULTHANDLER=1\
 
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 
-RUN apt-get update && apt-get upgrade -y \
+RUN apt-get update \
     && apt-get install --no-install-recommends -y \
     curl \
     libgl1 \
@@ -41,28 +41,14 @@ RUN apt-get update && apt-get upgrade -y \
 
 WORKDIR /code
 
-# Download the NuClick model
-COPY scripts/download_nuclick_weights.sh /code/scripts/
-RUN chmod +x /code/scripts/download_nuclick_weights.sh
-RUN /code/scripts/download_nuclick_weights.sh
+# Copy script for weights download and set permissions
+COPY --chmod=744 scripts/weights/*.sh /code/scripts/weights/
 
-# Download the MC models
-COPY scripts/download_mc_weights.sh /code/scripts/
-RUN chmod +x /code/scripts/download_mc_weights.sh
-RUN /code/scripts/download_mc_weights.sh
+# Download the weights of all models
+RUN /code/scripts/weights/index.sh
 
-# Download the NP model
-COPY scripts/download_np_weights.sh /code/scripts/
-RUN chmod +x /code/scripts/download_np_weights.sh
-RUN /code/scripts/download_np_weights.sh
-
-# Download the SAM model
-COPY scripts/download_sam_weights.sh /code/scripts/
-RUN chmod +x /code/scripts/download_sam_weights.sh
-RUN /code/scripts/download_sam_weights.sh
-
-# Uninstall curl
-RUN apt remove -y curl
+# Uninstall curl and remove weight scripts
+RUN apt-get purge -y --auto-remove curl && rm -rf /code/scripts
 
 WORKDIR /code
 
