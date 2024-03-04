@@ -6,6 +6,8 @@
 
 ### Chore
 
+* chore(release): v0.1.0 [skip ci] ([`5953ff0`](https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend/commit/5953ff029f9450b97b6b1abee7544a7ba91a2ab5))
+
 * chore(release): v0.1.0 [skip ci] ([`63cc334`](https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend/commit/63cc3342dd6d124e7d3da0720bcf420ec79efa14))
 
 * chore(release): v0.1.0 [skip ci] ([`da39c8a`](https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend/commit/da39c8a2635a56d31d961d17c5a0b6025390d982))
