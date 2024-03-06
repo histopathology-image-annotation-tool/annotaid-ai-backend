@@ -16,6 +16,9 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write
+    concurrency: push
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -35,3 +38,16 @@ jobs:
           semantic-release version
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Save a new version to ENV variable
+        id: release
+        run: |
+          VERSION=$(poetry version -s)
+
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+  docker:
+    needs: [release]
+    if: needs.release.outputs.tag != ''
+    name: "Build and push Docker image"
+    uses: ./.github/workflows/docker.yaml
+    secrets: inherit
