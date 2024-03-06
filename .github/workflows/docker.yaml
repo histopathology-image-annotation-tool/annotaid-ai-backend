@@ -26,7 +26,7 @@ jobs:
         with:
           images: annotaid/backend
           tags: |
-            type=raw,value=v${{ inputs.tag }},latest,enable={{is_default_branch}}
+            type=raw,value=v${{ inputs.tag }},latest
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -43,7 +43,7 @@ jobs:
         with:
           images: annotaid/worker
           tags: |
-            type=raw,value=v${{ inputs.tag }},latest,enable={{is_default_branch}}
+            type=raw,value=v${{ inputs.tag }},latest
 
       - name: Build and push worker image
         uses: docker/build-push-action@v5
