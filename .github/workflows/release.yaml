@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  POETRY_VERSION: 1.6.1
+
 jobs:
   release:
     name: Release
@@ -42,6 +45,8 @@ jobs:
       - name: Save a new version to ENV variable
         id: release
         run: |
+          pip install poetry==${{ env.POETRY_VERSION }}
+
           VERSION=$(poetry version -s)
 
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
@@ -50,4 +55,6 @@ jobs:
     if: needs.release.outputs.tag != ''
     name: "Build and push Docker image"
     uses: ./.github/workflows/docker.yaml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
     secrets: inherit
