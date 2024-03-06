@@ -26,7 +26,7 @@ jobs:
         with:
           images: annotaid/backend
           tags: |
-            type=raw,value=v${{ inputs.tag }},latest
+            type=raw,value=v${{ inputs.tag }}
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -34,7 +34,9 @@ jobs:
           context: .
           file: ./docker/backend.dockerfile
           push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
+          tags: |
+            ${{ steps.meta-backend.outputs.tags }}
+            annotaid/backend:latest
           labels: ${{ steps.meta-backend.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for worker
@@ -43,7 +45,7 @@ jobs:
         with:
           images: annotaid/worker
           tags: |
-            type=raw,value=v${{ inputs.tag }},latest
+            type=raw,value=v${{ inputs.tag }}
 
       - name: Build and push worker image
         uses: docker/build-push-action@v5
@@ -51,5 +53,7 @@ jobs:
           context: .
           file: ./docker/worker.dockerfile
           push: true
-          tags: ${{ steps.meta-worker.outputs.tags }}
+          tags: |
+            ${{ steps.meta-worker.outputs.tags }}
+            annotaid/worker:latest
           labels: ${{ steps.meta-worker.outputs.labels }}
