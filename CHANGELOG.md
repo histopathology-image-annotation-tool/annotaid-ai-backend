@@ -6,6 +6,8 @@
 
 ### Chore
 
+* chore(release): v0.1.0 [skip ci] ([`e2f9450`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/e2f9450bfc6e4159a845a869beabff55834c8eaa))
+
 * chore(release): v0.1.0 [skip ci] ([`3c011ed`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/3c011ed28b8d227ba99a190032dea27e8e4ff922))
 
 * chore(release): v0.1.0 [skip ci] ([`0c282e8`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0c282e8f959808de3a8f32c17d7d4cace8549afb))
@@ -24,6 +26,32 @@
 
 * chore(release): v0.1.0 [skip ci] ([`da39c8a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/da39c8a2635a56d31d961d17c5a0b6025390d982))
 
+* chore(release): 1.0.0 [skip ci]
+
+# 1.0.0 (2024-03-04)
+
+### Bug Fixes
+
+* cors ([b9d5129](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/b9d5129cae3126592dea0b0851c898fe630a5a44))
+* cors ([03f4fd7](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/03f4fd7dbfeee0c4750ac20b2a5a02d529ec3ad0))
+* dockerhub.yaml ([4671fbd](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4671fbd09a675667dbb8c801162dbd1757ebc4d7))
+* download weights ([394dfc2](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/394dfc2b937580b4243fddefe97787e41df24322))
+* Makefile and tags ([7e176a0](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/7e176a0cafaa61fce9a3e9b12f375049eee22e54))
+* NormalizeHEStains error ([0415a25](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0415a25df8b9b3fec38906d5ebd2e022b327ed55))
+* return previous_predict_task_id in SAMPredictResponse ([f439fb4](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/f439fb4e8889e9f218510dc2a59970dc6531b760))
+
+### Features
+
+* add api for nuclick and mitosis detection ([412533a](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/412533ae64d6c422939f8fa7e4ed03581ee75559))
+* add config files ([edeb5ee](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/edeb5ee69210290ba398da8425b7a6c6668cb27e))
+* add dockerfiles ([2700b37](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/2700b37acc3dfb561322eecc98da09860c13977e))
+* add nuclear pleomorphism ([ffb1bf2](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/ffb1bf2d1116245c74a2347b6a10242d88b3a5f3))
+* add nuclick bbox dense prediction and update API routes ([f171199](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/f1711995b7629224a66240e0d22b3d5821772ffc))
+* add SAHI prediction for MC first-stage model ([62a8e83](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/62a8e8341523af42ba5a3523cb2f580e31c8958b))
+* add SAM model ([ce640ac](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/ce640aca7534b0f0ef380892b607a97974006538))
+* add SAM postprocessing config ([a9abd32](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/a9abd324dbd71d25a200c2d70817325e3a2c749e))
+* update docker python version ([8f793bc](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/8f793bc3f17df3144f7e41d65386c0985d82ab04)) ([`290e617`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/290e61757cd9b07ef138750de049cc12a4142532))
+
 * chore: update README.md ([`dcf28a1`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/dcf28a1a65c6230f37cf018e9be488f1a42ec3d1))
 
 * chore: update LICENSE ([`214956f`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/214956fea5bf1b2b208946e797e925277cf1bfae))
@@ -31,6 +59,10 @@
 * chore: update LICENSE ([`4a66b30`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4a66b304d4d102d59bced3eaf8abd0883535b444))
 
 ### Ci
+
+* ci: update dependencies ([`80fa943`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/80fa943dd4d61944bffa045b71023e8d39bc659e))
+
+* ci: update branch in release workflow ([`07f207a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/07f207aeeb1aedfaece3093d8d8b66f4fec396e4))
 
 * ci: fix dockerfile paths ([`5c87cdf`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/5c87cdf4d76c559f93fc4742ab830e2c1b56e0c6))
 
@@ -103,6 +135,12 @@
 * fix: dockerhub.yaml ([`4671fbd`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4671fbd09a675667dbb8c801162dbd1757ebc4d7))
 
 ### Unknown
+
+* Merge branch &#39;feat/semantic_release&#39; ([`1d8a431`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/1d8a431ec8a112aff174953c2b142b715d272e22))
+
+* Merge branch &#39;main&#39; into feat/semantic_release ([`8abcbd8`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/8abcbd8a65ea6904e9519cf97c5c8f76251a4671))
+
+* Merge branch &#39;feat/semantic_release&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend into feat/semantic_release ([`5784eba`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/5784ebac6f9fe435252b86cee393dd0b5cdd447f))
 
 * Merge branch &#39;feat/semantic_release&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend into feat/semantic_release ([`7395239`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/7395239076978248e998a4e250f5e583827cdfdc))
 
