@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+env:
+  POETRY_VERSION: 1.6.1
 
 jobs:
   release:
@@ -16,19 +16,56 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write
+    concurrency: push
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm install @semantic-release/git @semantic-release/changelog -D
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Semantic release
-        run: npx semantic-release@22
+        run: |
+          pip install python-semantic-release
+          git config --global user.name "release-bot"
+          git config --global user.email "github-actions@github.com"
+          semantic-release version
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Save a new version to ENV variable
+        id: release
+        run: |
+          pip install poetry==${{ env.POETRY_VERSION }}
+
+          VERSION=$(poetry version -s)
+
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+
+  docker_backend:
+    needs: [release]
+    if: needs.release.outputs.tag != ''
+    name: "Build and push backend docker image"
+    uses: ./.github/workflows/docker.yaml
+    with:
+      dockerfile: ./docker/backend.dockerfile
+      image_name: backend
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
+
+  docker_worker:
+    needs: [release]
+    if: needs.release.outputs.tag != ''
+    name: "Build and push worker docker image"
+    uses: ./.github/workflows/docker.yaml
+    with:
+      dockerfile: ./docker/worker.dockerfile
+      image_name: worker
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
