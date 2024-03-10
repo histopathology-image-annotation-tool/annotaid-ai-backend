@@ -18,6 +18,7 @@ jobs:
       id-token: write
     concurrency: push
     outputs:
+      last_tag: ${{ steps.release.outputs.last_tag }}
       tag: ${{ steps.release.outputs.tag }}
     steps:
       - name: Check out the repo
@@ -31,26 +32,31 @@ jobs:
           python-version: '3.11'
 
       - name: Semantic release
-        run: |
-          pip install python-semantic-release
-          git config --global user.name "release-bot"
-          git config --global user.email "github-actions@github.com"
-          semantic-release version
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Save a new version to ENV variable
         id: release
         run: |
-          pip install poetry==${{ env.POETRY_VERSION }}
+          pip install python-semantic-release poetry==${{ env.POETRY_VERSION }}
 
+          git config --global user.name "release-bot"
+          git config --global user.email "github-actions@github.com"
+
+          # save previous version
+          LAST_VERSION=$(poetry version -s)
+
+          echo "last_tag=${LAST_VERSION}" >> $GITHUB_OUTPUT
+
+          # semantic release
+          semantic-release version
+
+          # save new version
           VERSION=$(poetry version -s)
 
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   docker_backend:
     needs: [release]
-    if: needs.release.outputs.tag != ''
+    if: needs.release.outputs.tag != needs.release.outputs.last_tag
     name: "Build and push backend docker image"
     uses: ./.github/workflows/docker.yaml
     with:
@@ -61,7 +67,7 @@ jobs:
 
   docker_worker:
     needs: [release]
-    if: needs.release.outputs.tag != ''
+    if: needs.release.outputs.tag != needs.release.outputs.last_tag
     name: "Build and push worker docker image"
     uses: ./.github/workflows/docker.yaml
     with:
