@@ -52,7 +52,7 @@ jobs:
 
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
 
-          echo $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
