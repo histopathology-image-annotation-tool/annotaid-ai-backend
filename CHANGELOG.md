@@ -6,6 +6,8 @@
 
 ### Chore
 
+* chore(release): v0.1.0 [skip ci] ([`0c282e8`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0c282e8f959808de3a8f32c17d7d4cace8549afb))
+
 * chore(release): v0.1.0 [skip ci] ([`e13feed`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/e13feed286898d8e2d580511d10b4055039ee60d))
 
 * chore(release): v0.2.0 [skip ci] ([`4f91070`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4f91070162f565a34510519aa0e05ed108cc28f1))
@@ -73,6 +75,8 @@
 * feat: add api for nuclick and mitosis detection ([`412533a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/412533ae64d6c422939f8fa7e4ed03581ee75559))
 
 ### Fix
+
+* fix: update version dependencies ([`c2c192f`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/c2c192fa91a316df98d7bb95a8bb304693bdce1c))
 
 * fix: remove CHANGELOG ([`b33424a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/b33424aa59bb9efaadda2bf324f516190f2839ee))
 
