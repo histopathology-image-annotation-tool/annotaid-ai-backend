@@ -39,7 +39,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_USER }}/${{ inputs.image_name }}
           tags: |
-            type=raw,value=v${{ inputs.tag }}
+            type=raw,value=${{ inputs.tag }}
       
       - name: Build and push image
         uses: docker/build-push-action@v5
