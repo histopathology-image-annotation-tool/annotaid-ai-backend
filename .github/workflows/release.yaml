@@ -2,10 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [feat/semantic_release]
-
-permissions:
-  contents: write
+    branches: [main]
 
 env:
   POETRY_VERSION: 1.6.1
