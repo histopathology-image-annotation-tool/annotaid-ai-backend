@@ -6,6 +6,8 @@
 
 ### Chore
 
+* chore(release): v0.1.0 [skip ci] ([`e13feed`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/e13feed286898d8e2d580511d10b4055039ee60d))
+
 * chore(release): v0.2.0 [skip ci] ([`4f91070`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4f91070162f565a34510519aa0e05ed108cc28f1))
 
 * chore(release): v0.1.0 [skip ci] ([`886891e`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/886891ebed26007e69be2b15479248c6e3beb8f2))
@@ -25,6 +27,8 @@
 * chore: update LICENSE ([`4a66b30`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4a66b304d4d102d59bced3eaf8abd0883535b444))
 
 ### Ci
+
+* ci: fix dockerfile paths ([`5c87cdf`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/5c87cdf4d76c559f93fc4742ab830e2c1b56e0c6))
 
 * ci: parallel backend and worker docker image build ([`f11e7b4`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/f11e7b41b8bffff9422afbeb4447f5c627306ecb))
 
@@ -91,6 +95,8 @@
 * fix: dockerhub.yaml ([`4671fbd`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/4671fbd09a675667dbb8c801162dbd1757ebc4d7))
 
 ### Unknown
+
+* Merge branch &#39;feat/semantic_release&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend into feat/semantic_release ([`c629e4b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/c629e4bf452ef56784dcdcede7c95a1c9ca02c58))
 
 * Merge branch &#39;feat/semantic_release&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend into feat/semantic_release ([`1b82b86`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/1b82b86926d0d33fa299edee90bffba9de846025))
 
