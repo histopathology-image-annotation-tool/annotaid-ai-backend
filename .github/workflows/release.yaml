@@ -57,7 +57,7 @@ jobs:
     name: "Build and push backend docker image"
     uses: ./.github/workflows/docker.yaml
     with:
-      dockerfile: ./docker/backend
+      dockerfile: ./docker/backend.dockerfile
       image_name: backend
       tag: ${{ needs.release.outputs.tag }}
     secrets: inherit
@@ -68,7 +68,7 @@ jobs:
     name: "Build and push worker docker image"
     uses: ./.github/workflows/docker.yaml
     with:
-      dockerfile: ./docker/worker
+      dockerfile: ./docker/worker.dockerfile
       image_name: worker
       tag: ${{ needs.release.outputs.tag }}
     secrets: inherit
