@@ -3,7 +3,7 @@ name = "annotaidaibe"
 version = "0.1.0"
 description = "Annotaid AI BE"
 authors = ["Adam Bublavý <xbublavy@stuba.sk>"]
-license = "MIT"
+license = "AGPL-3.0-or-later"
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -21,17 +21,17 @@ numpy = "^1.26.1"
 flower = "^2.0.1"
 torch = "2.0.1"
 nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
-nvidia-cuda-cupti-cu11 = { version = "0.1.0", platform = 'linux' }
-nvidia-cuda-nvrtc-cu11 = { version = "0.1.0", platform = 'linux' }
-nvidia-cuda-runtime-cu11 = { version = "0.1.0", platform = 'linux' }
+nvidia-cuda-cupti-cu11 = { version = "11.7.101", platform = 'linux' }
+nvidia-cuda-nvrtc-cu11 = { version = "11.7.99", platform = 'linux' }
+nvidia-cuda-runtime-cu11 = { version = "11.7.99", platform = 'linux' }
 nvidia-cudnn-cu11 = { version = "8.5.0.96", platform = 'linux' }
 nvidia-cufft-cu11 = { version = "10.9.0.58", platform = 'linux' }
 nvidia-curand-cu11 = { version = "10.2.10.91", platform = 'linux' }
 nvidia-cusolver-cu11 = { version = "11.4.0.1", platform = 'linux' }
 nvidia-cusparse-cu11 = { version = "11.7.4.91", platform = 'linux' }
-nvidia-nccl-cu11 = { version = "0.1.0", platform = 'linux' }
-nvidia-nvtx-cu11 = { version = "0.1.0", platform = 'linux' }
-triton = { version = "0.1.0", platform = 'linux' }
+nvidia-nccl-cu11 = { version = "2.14.3", platform = 'linux' }
+nvidia-nvtx-cu11 = { version = "11.7.91", platform = 'linux' }
+triton = { version = "2.0.0", platform = 'linux' }
 torchvision = "0.15.2"
 scikit-image = "^0.22.0"
 imantics = "^0.1.12"
@@ -60,7 +60,6 @@ pytest-cov = "^4.1.0"
 name = "fury"
 url = "https://pypi.fury.io/hiat-app/"
 priority = "supplemental"
-
 
 [[tool.poetry.source]]
 name = "PyPI"
