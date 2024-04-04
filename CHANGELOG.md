@@ -2,7 +2,18 @@
 
 
 
+## v0.2.2 (2024-04-04)
+
+### Fix
+
+* fix: update dependecies ([`9d43b3b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/9d43b3b60c4059ac1110fa31160e15fd25dc7ca2))
+
+
 ## v0.2.1 (2024-04-04)
+
+### Chore
+
+* chore(release): v0.2.1 [skip ci] ([`be117b9`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/be117b95db71b53864262b6f0daa91db1a4978a0))
 
 ### Fix
 
