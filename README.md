@@ -34,6 +34,7 @@ make download_weights
 make run_be env=local
 make run_worker env=local
 make run_redis
+make run_postgis
 ```
 
 ### Docker

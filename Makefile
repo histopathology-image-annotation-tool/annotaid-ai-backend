@@ -101,7 +101,7 @@ run_worker:
 ifeq ($(env),docker)
 	@docker run -dt --env-file .env annotaid/worker.dev
 else ifeq ($(env),local)
-	@celery -A src.core.celery worker --pool=solo --loglevel=info
+	@celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,reader
 else
 	@echo "Invalid arguments, supported only: docker, local"
 	@echo "Examples:"
@@ -110,6 +110,9 @@ endif
 
 run_redis:
 	@docker run -p 6379:6379 --name redis -d redis
+
+run_postgis:
+	@docker run -p 5432:5432 --name postgis -e POSTGRES_PASSWORD=postgres -d postgis/postgis
 
 run:
 ifeq ($(env),prod)
@@ -133,4 +136,5 @@ help:
 	@echo "run_be                  : runs backend"
 	@echo "run_worker              : runs celery worker"
 	@echo "run_redis               : runs redis docker image"
+	@echo "run_postgis             : runs postgis docker image"
 	@echo "run                     : runs docker-compose"
