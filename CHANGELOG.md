@@ -2,9 +2,22 @@
 
 
 
+## v0.2.1 (2024-04-04)
+
+### Fix
+
+* fix: psycopg2 package ([`edf9c73`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/edf9c7344d115ac69ec443e149f8362c2f56d104))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend ([`43959a8`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/43959a8ae66f752c913d07c5bd1fc2913dcb4710))
+
+
 ## v0.2.0 (2024-04-04)
 
 ### Chore
+
+* chore(release): v0.2.0 [skip ci] ([`0a61712`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0a61712c53ba42fdb2eb9292f32960f56cc94254))
 
 * chore: update LICENSE and README [skip ci] ([`0fe196b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0fe196b115c1af0e0831e308dfe4f1f33133dd7c))
 
