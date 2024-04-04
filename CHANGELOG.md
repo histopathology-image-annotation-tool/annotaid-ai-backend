@@ -2,9 +2,56 @@
 
 
 
+## v0.2.0 (2024-04-04)
+
+### Chore
+
+* chore: update LICENSE and README [skip ci] ([`0fe196b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0fe196b115c1af0e0831e308dfe4f1f33133dd7c))
+
+### Ci
+
+* ci: stop building docker images when no release is done ([`9888973`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/98889739f0671f35a7b70fce2737e35aed50ff08))
+
+* ci: stop building docker images when no release is done ([`51b1665`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/51b166574a68bc7f8f1116a3f7d9e764db2887e3))
+
+* ci: stop building docker images when no release is done ([`ae82929`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/ae829290ad52dba6c48ebcfce0a8719f62e1e8f6))
+
+* ci: stop building docker images when no release is done ([`ce5062b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/ce5062b478cc0050faa46a09555204b4b6167a27))
+
+### Feature
+
+* feat: add AL queue to celery ([`59af91d`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/59af91de03e7e7d1ae18231a9b189d42a84e7191))
+
+* feat: update Dockerfiles, Makefile and README ([`d9073f2`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/d9073f25381133f89aa78fa8fcba54ac6268bfbd))
+
+* feat: add get_slide_annotations endpoint and update existing ([`58cf2f5`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/58cf2f59a1e5660b18832e3a6211bae5758b0318))
+
+* feat: add active learning endpoints ([`fb56992`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/fb56992508c84399722d22beb1daa7e345c815f5))
+
+* feat: add active learning celery jobs ([`7b16333`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/7b1633363b68281c79d4a20717eddbd6c9900df6))
+
+* feat: update .env.example ([`9064967`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/90649673c6fa1ed1e73a7ffc580f59a0bebd32f1))
+
+* feat: add middleware for pagination ([`bf8b3fd`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/bf8b3fd4410661939bb8cfb418494a71cacc1a93))
+
+* feat: add schemas for active learning ([`666c133`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/666c1332ed72424c7786f5145df32a06e3b9dfa6))
+
+* feat: setup database connection ([`fb1a376`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/fb1a37612614231c53b42f801fbc6d285b1461f2))
+
+* feat: add active learning database models ([`5d6dc87`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/5d6dc873f2dc7aa95dfcdb3c9e38bd18ecb60496))
+
+### Unknown
+
+* Merge branch &#39;feat/active_learning&#39; ([`74d0b23`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/74d0b23540f29268d72f327a899af05e16b3eb32))
+
+* Merge branch &#39;main&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend ([`1a0c242`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/1a0c2428d80f232a674728da0e882a3b25091697))
+
+
 ## v0.1.0 (2024-03-10)
 
 ### Chore
+
+* chore(release): v0.1.0 [skip ci] ([`10faa9d`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/10faa9d9506be064457e4110588dbd96cff22a58))
 
 * chore(release): v0.1.0 [skip ci] ([`e2f9450`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/e2f9450bfc6e4159a845a869beabff55834c8eaa))
 
