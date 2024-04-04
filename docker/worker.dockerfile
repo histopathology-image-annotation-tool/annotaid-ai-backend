@@ -68,4 +68,4 @@ COPY src/ /code/src
 
 EXPOSE 8000
 
-CMD ["celery", "-A", "src.core.celery", "worker", "--pool", "solo", "--loglevel", "info"]
+CMD ["celery", "-A", "src.core.celery", "worker", "--pool", "solo", "--loglevel", "info", "-Q", "celery,AL,reader"]

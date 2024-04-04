@@ -8,8 +8,9 @@ from .definitions import NPPredictTask
 
 @celery_app.task(
     ignore_result=False,
+    track_started=True,
     bind=True,
-    base=NPPredictTask
+    base=NPPredictTask,
 )
 def predict_np_task(
     self: NPPredictTask,

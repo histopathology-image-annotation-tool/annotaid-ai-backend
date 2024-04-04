@@ -15,5 +15,6 @@ celery_app.autodiscover_tasks([
     'src.celery.nuclick',
     'src.celery.mc',
     'src.celery.np',
-    'src.celery.sam'
+    'src.celery.sam',
+    'src.celery.active_learning'
 ])

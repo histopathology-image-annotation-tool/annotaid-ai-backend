@@ -19,6 +19,7 @@ from .definitions import SamPredictorConfig, SamPredictTaskResult, SAMTask
 
 @celery_app.task(
     ignore_result=False,
+    track_started=True,
     bind=True,
     base=SAMTask
 )

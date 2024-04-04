@@ -102,7 +102,28 @@ def apply_offset_to_bboxes(
     return mitosis_predictions
 
 
-@celery_app.task(ignore_result=False)
+@celery_app.task(bind=True, ignore_result=True)
+def _predict_mc_task(
+    self,
+    image: np.ndarray,
+    offset: tuple[int, int]
+) -> list[MitosisPrediction]:
+    """Detects the mitotic and hard-negative mitotic cells in the input image.
+
+    Args:
+        image (np.ndarray): The input image of at least 512x512 pixels.
+        offset (tuple[int, int]): The offset to be applied to the bounding boxes.
+    Returns:
+        list[MitosisPrediction]: The predictions for the mitotic candidates.
+    """
+    sig = predict_mc_first_stage_task.s(image=image) | \
+        predict_mc_second_stage_task.s(image=image) | \
+        apply_offset_to_bboxes.s(offset=offset)
+
+    return self.replace(sig)
+
+
+@celery_app.task(ignore_result=False, track_started=True)
 def predict_mc_task(
     image: np.ndarray,
     offset: tuple[int, int]
@@ -115,8 +136,4 @@ def predict_mc_task(
     Returns:
         list[MitosisPrediction]: The predictions for the mitotic candidates.
     """
-    chain = predict_mc_first_stage_task.s(image=image) | \
-        predict_mc_second_stage_task.s(image=image) | \
-        apply_offset_to_bboxes.s(offset=offset)
-
-    return chain()
+    return _predict_mc_task(image, offset)()
