@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Annotated, Any, Generic, Literal, TypeVar, Union
 from uuid import UUID
 
 from geoalchemy2 import WKTElement
@@ -15,7 +15,19 @@ from pydantic import (
 )
 from shapely import Polygon, wkb
 
+from .mc import MitosisLabel
 from .shared import BoundingBox
+
+AnnotationLabel = Annotated[Union[MitosisLabel, Literal["unknown"]], None]
+
+
+def transform_label(label: str) -> MitosisLabel | str:
+    _mapping: dict[str, MitosisLabel] = {
+        "0": MitosisLabel.mitosis,
+        "1": MitosisLabel.hard_negative_mitosis
+    }
+
+    return _mapping.get(label, label)
 
 
 class WholeSlideImage(BaseModel):
@@ -38,25 +50,25 @@ class WholeSlideImage(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def transform(cls, values):
+    def transform(cls, values: dict[str, Any]) -> dict[str, Any]:
         path = Path(values['path'])
         values['directory'] = path.parent
         values['filename'] = path.stem
         values['extension'] = path.suffix
         return values
-    
+
     @field_validator('path', 'directory', mode="after")
     @classmethod
     def transform_path(cls, path: Path) -> str:
         return path.as_posix()
-    
+
 
 class Prediction(BaseModel):
     id: UUID
     wsi_id: UUID
     bbox: BoundingBox
     probability: NonNegativeFloat
-    label: str
+    label: AnnotationLabel
     created_at: datetime
     updated_at: datetime
 
@@ -80,6 +92,13 @@ class Prediction(BaseModel):
             width=x2 - x1,
             height=y2 - y1
         )
+
+    _transform_label = field_validator('label', mode="before")(transform_label)
+
+    @field_validator('probability', mode="after")
+    @classmethod
+    def transform_probability(cls, probability: float) -> float:
+        return round(probability, 4)
 
 
 class ALPredictSlideRequest(BaseModel):
@@ -92,7 +111,7 @@ class Annotation(BaseModel):
     id: UUID
     user_id: str
     bbox: BoundingBox
-    label: str
+    label: AnnotationLabel
     message: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -117,26 +136,48 @@ class Annotation(BaseModel):
             width=x2 - x1,
             height=y2 - y1
         )
-    
+
+    _transform_label = field_validator('label', mode="before")(transform_label)
+
 
 class Counts(BaseModel):
-    """Represents the mitotic counts."""
+    """Represents counts of annotations."""
     mitosis: NonNegativeInt
     hard_negative_mitosis: NonNegativeInt
-    
 
-class WholeSlideImageWithCounts(BaseModel):
+    @classmethod
+    def from_dict(cls, data: dict[str, int]) -> 'Counts':
+        return cls(mitosis=data.get('0', 0), hard_negative_mitosis=data.get('1', 0))
+
+
+class AnnotationMetadata(BaseModel):
+    """Represents metadata about an slide annotations."""
+    user_annotated: Counts | None = Field(
+        None,
+        description="Counts of annotations annotated by user"
+    )
+    total: Counts
+
+
+class WholeSlideImageWithMetadata(BaseModel):
     """Represents a response containing a list of slides."""
     slide: WholeSlideImage
-    counts: Counts
+    metadata: AnnotationMetadata
 
 
-class UpdateSlideAnnotationRequest(BaseModel):
-    """Represents a request to update an annotation."""
+class UpsertSlideAnnotationRequest(BaseModel):
+    """Represents a request to upsert an annotation."""
     user_id: str
     bbox: BoundingBox
-    label: str
+    label: AnnotationLabel
     message: str | None = None
+
+
+class UpsertSlideAnnotationResponse(BaseModel):
+    """Represents a response to an upsert annotation request with the next
+    prediction to annotate."""
+    annotation: Annotation
+    next_annotation: Prediction | None = None
 
 
 M = TypeVar('M', bound=BaseModel)

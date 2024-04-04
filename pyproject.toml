@@ -16,7 +16,7 @@ alembic = "^1.13.1"
 geoalchemy2 = "^0.14.6"
 
 [tool.poetry.group.api.dependencies]
-fastapi = "^0.104.1"
+fastapi = "^0.110.1"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 numpy = "^1.26.1"
 asyncpg = "^0.29.0"

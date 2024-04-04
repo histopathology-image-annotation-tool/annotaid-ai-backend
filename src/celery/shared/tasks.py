@@ -1,12 +1,12 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
+from celery import Task, group, shared_task, subtask
 from celery.canvas import Signature
-
-from celery import group, shared_task, subtask
 
 
 @shared_task(bind=True)
-def dmap(self, iterable: Iterable[Signature], callback: Signature) -> Signature:
+def dmap(self: Task, iterable: Iterable[Signature], callback: Signature) -> Signature:
     # Map a callback over an iterator and return as a group
     callback = subtask(callback)
     sig = group(callback.clone([arg,]) for arg in iterable)
@@ -15,7 +15,7 @@ def dmap(self, iterable: Iterable[Signature], callback: Signature) -> Signature:
 
 
 @shared_task(bind=True)
-def expand_args(self, args: Any, func: Signature) -> Signature:
+def expand_args(self: Task, args: Any, func: Signature) -> Signature:
     func = subtask(func)
 
     sig = func.clone([*args])
@@ -29,7 +29,7 @@ def noop(arg: Any) -> Any:
 
 
 @shared_task(bind=True)
-def residual(self, residual: Any, func: Signature) -> Signature:
+def residual(self: Task, residual: Any, func: Signature) -> Signature:
     func = subtask(func)
 
     sig = group([

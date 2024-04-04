@@ -1,19 +1,16 @@
 import base64
 import copy
 from io import BytesIO
-from pathlib import Path
-from urllib.parse import urlparse, urlunparse
 
 import cv2
 import httpx
 import numpy as np
-from geoalchemy2 import WKTElement, functions
+from geoalchemy2 import functions
 from PIL import Image
-from pydantic import AnyHttpUrl, BaseModel, NonNegativeFloat, NonNegativeInt
 from sqlalchemy import desc
 
 import src.db_models as db_models
-from celery import shared_task
+from celery import Task, shared_task
 from src.celery.database import get_session
 from src.celery.mc.tasks import _predict_mc_task
 from src.celery.shared import dmap, expand_args, residual
@@ -21,51 +18,10 @@ from src.core.celery import celery_app
 from src.core.config import settings
 from src.models.mc.custom_types import MitosisPrediction
 
+from .definitions import GetSlideMetadataResponse
+from .utils import convert_bbox_to_wkt, join_url
+
 MITOSIS_MEAN_LAB = np.array([52.357067, 29.037254, -30.11074], dtype=np.float32)
-
-
-class PixelsPerMeter(BaseModel):
-    avg: NonNegativeFloat
-    x: NonNegativeFloat
-    y: NonNegativeFloat
-
-
-class MetadataDimSize(BaseModel):
-    micro: NonNegativeFloat
-    pixel: NonNegativeFloat
-
-
-class Size(BaseModel):
-    c: NonNegativeInt
-    t: NonNegativeInt
-    z: NonNegativeInt
-    width: MetadataDimSize
-    height: MetadataDimSize
-
-
-class FileSize(BaseModel):
-    uncompressed: NonNegativeInt
-    compressed: NonNegativeInt
-
-
-class GetSlideMetadataResponse(BaseModel):
-    magnification: NonNegativeInt
-    format: str
-    domains: list[str]
-    resolution: NonNegativeInt
-    fillColor: NonNegativeInt
-    path: Path
-    pixelsPerMeter: PixelsPerMeter
-    size: Size
-    fileSize: FileSize
-    hash: str
-    levels: NonNegativeInt
-
-
-def join_url(base_url: str | AnyHttpUrl, path: str) -> str:
-    url_parts = list(urlparse(str(base_url)))
-    url_parts[2] = path
-    return urlunparse(url_parts)
 
 
 @shared_task(
@@ -266,7 +222,11 @@ def store_annotations(
     slide_path: str,
 ) -> None:
     with get_session() as session:
-        wsi = session.query(db_models.WholeSlideImage).filter_by(path=slide_path).first()
+        wsi = session.query(
+            db_models.WholeSlideImage
+        ).filter_by(
+            path=slide_path
+        ).first()
 
         if wsi is None:
             raise ValueError(f'Whole slide image with path {slide_path} not found')
@@ -274,7 +234,7 @@ def store_annotations(
         for annotation in annotations:
             bbox = annotation['bbox']
 
-            bbox_wkt = WKTElement(f"POLYGON(({bbox[0]} {bbox[1]}, {bbox[2]} {bbox[1]}, {bbox[2]} {bbox[3]}, {bbox[0]} {bbox[3]}, {bbox[0]} {bbox[1]}))", srid=4326)
+            bbox_wkt = convert_bbox_to_wkt(bbox)
 
             intersecting_polygon_result = session.query(
                 functions.ST_Area(
@@ -325,7 +285,12 @@ def add_offset(
 
 
 @celery_app.task(bind=True, ignore_result=True)
-def process_tile(self, coords: np.ndarray, slide_path: str, tile_size: int):
+def process_tile(
+    self: Task,
+    coords: np.ndarray,
+    slide_path: str,
+    tile_size: int
+) -> None:
     sig = crop_tile.s(
         slide_path=slide_path,
         x=coords[0],
@@ -340,7 +305,7 @@ def process_tile(self, coords: np.ndarray, slide_path: str, tile_size: int):
     ) | store_annotations.s(
         slide_path=slide_path
     )
-    
+
     return self.replace(sig)
 
 
@@ -359,7 +324,7 @@ def get_slide_best_magnification(
     tile_size: int = 2048
 ) -> tuple[int, GetSlideMetadataResponse]:
     current_magnification = 0
-    max_magnification = None
+    max_magnification: int | None = None
     metadata = None
 
     with httpx.Client() as client:
@@ -376,22 +341,23 @@ def get_slide_best_magnification(
             if max_magnification is None:
                 max_magnification = metadata.levels
 
-            if metadata.size.width.pixel <= tile_size or metadata.size.height.pixel <= tile_size:
+            if metadata.size.width.pixel <= tile_size or metadata.size.\
+                height.pixel <= tile_size:  # noqa: E125
                 break
 
             current_magnification += 1
 
-    return max_magnification - current_magnification, metadata
+    return max_magnification - current_magnification, metadata  # type: ignore
 
 
 @celery_app.task(bind=True, ignore_result=True)
 def get_coords(
-    self,
+    self: Task,
     mask_magnification: int,
     metadata: GetSlideMetadataResponse,
     path: str,
     tile_size: int = 2048
-):
+) -> list[tuple[int, int]]:
     sig = download_tile.s(
         level=mask_magnification,
         slide_path=path,
@@ -417,7 +383,7 @@ def get_coords(
 def process_wsi(
     path: str,
     tile_size: int = 2048
-):
+) -> None:
     chain = get_slide_best_magnification.s(
         slide_path=path,
         tile_size=tile_size
@@ -444,11 +410,11 @@ def get_list_of_wsi_files() -> list[str]:
             'ext': 'vsi'
         }
     )
-    response: list[str] = response.json()
+    json_response: list[str] = response.json()
 
     return [
         file
-        for file in response
+        for file in json_response
         if file.find("_HE") != -1
     ]
 
@@ -456,31 +422,40 @@ def get_list_of_wsi_files() -> list[str]:
 @shared_task(ignore_result=True)
 def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
     with get_session() as session:
-        for metadata in metadatas:
-            wsi = db_models.WholeSlideImage(
-                hash=metadata.hash,
-                path=metadata.path.as_posix(),
-                format=metadata.format
-            )
+        hashes = [metadata.hash for metadata in metadatas]
 
-            session.add(wsi)
+        existing_slides_query = session.query(db_models.WholeSlideImage).where(
+            db_models.WholeSlideImage.hash.in_(hashes)
+        )
+
+        existing_slides_result = session.execute(existing_slides_query).fetchall()
+        existing_slides: dict[str, db_models.WholeSlideImage] = {
+            slide[0].hash: slide[0]
+            for slide in existing_slides_result
+        }
+
+        for metadata in metadatas:
+            if metadata.hash in existing_slides:
+                slide = existing_slides[metadata.hash]
+                slide.format = metadata.format
+                slide.hash = metadata.hash
+                slide.path = metadata.path.as_posix()
+            else:
+                wsi = db_models.WholeSlideImage(
+                    hash=metadata.hash,
+                    path=metadata.path.as_posix(),
+                    format=metadata.format
+                )
+
+                session.add(wsi)
 
         session.commit()
 
 
 @shared_task(ignore_result=True, queue="reader")
-def discover_wsi_files() -> None:
+def synchronize_slides() -> None:
     chain = get_list_of_wsi_files.s() | dmap.s(
         download_metadata.s()
     ) | store_metadata.s()
 
     return chain()
-
-# TODO: Create endpoints for the frontend to get the data for annotation
-# TODO: Create alembic migrations for the database
-# TODO: Update docker-compose to include the database and have persistent storage
-# TODO: Update script at the server to include the database and have persistent storage
-# TODO: Create multiple queues where the prediction tasks from the frontend will be prioritized
-# TODO: Update dockerfile of the worker to have configurable CMD
-# TODO: Save the softmax probabilities to the database
-# TODO: Save the hash of the model with which the annotations were created
