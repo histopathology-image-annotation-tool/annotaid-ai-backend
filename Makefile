@@ -101,7 +101,7 @@ run_worker:
 ifeq ($(env),docker)
 	@docker run -dt --env-file .env annotaid/worker.dev
 else ifeq ($(env),local)
-	@celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,reader
+	@celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL,reader
 else
 	@echo "Invalid arguments, supported only: docker, local"
 	@echo "Examples:"

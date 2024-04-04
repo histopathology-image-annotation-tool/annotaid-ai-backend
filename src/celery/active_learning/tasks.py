@@ -109,7 +109,7 @@ def download_metadata(
     return GetSlideMetadataResponse(**response)
 
 
-@celery_app.task(ignore_result=True)
+@celery_app.task(ignore_result=True, queue="AL")
 def create_tissue_mask(
     image: np.ndarray,
     median_blur: int = 5,
@@ -149,7 +149,7 @@ def create_tissue_mask(
     return output_image
 
 
-@celery_app.task(ignore_result=True)
+@celery_app.task(ignore_result=True, queue="AL")
 def clean_data(
     image: np.ndarray,
     mitoses: list[MitosisPrediction]
@@ -183,7 +183,7 @@ def clean_data(
     return cleared_mitoses
 
 
-@celery_app.task(ignore_result=True)
+@celery_app.task(ignore_result=True, queue="AL")
 def get_tiles_coords_from_tissue_mask(
     mask: np.ndarray,
     slide_width: int,
@@ -216,7 +216,7 @@ def get_tiles_coords_from_tissue_mask(
     return coords
 
 
-@celery_app.task(ignore_result=True)
+@celery_app.task(ignore_result=True, queue="AL")
 def store_annotations(
     annotations: list[MitosisPrediction],
     slide_path: str,
@@ -269,7 +269,7 @@ def store_annotations(
         session.commit()
 
 
-@shared_task(ignore_result=True)
+@shared_task(ignore_result=True, queue="AL")
 def add_offset(
     mitosis: list[MitosisPrediction],
     offset: tuple[int, int]
@@ -284,7 +284,7 @@ def add_offset(
     return copied_mitosis
 
 
-@celery_app.task(bind=True, ignore_result=True)
+@celery_app.task(bind=True, ignore_result=True, queue="AL")
 def process_tile(
     self: Task,
     coords: np.ndarray,
@@ -347,10 +347,10 @@ def get_slide_best_magnification(
 
             current_magnification += 1
 
-    return max_magnification - current_magnification, metadata  # type: ignore
+    return max_magnification - current_magnification, metadata
 
 
-@celery_app.task(bind=True, ignore_result=True)
+@celery_app.task(bind=True, ignore_result=True, queue="AL")
 def get_coords(
     self: Task,
     mask_magnification: int,
@@ -367,10 +367,8 @@ def get_coords(
     ) | create_tissue_mask.s(
 
     ) | get_tiles_coords_from_tissue_mask.s(
-        # slide_width=int(metadata.size.width.pixel),
-        # slide_height=int(metadata.size.height.pixel),
-        slide_width=22000,
-        slide_height=22000,
+        slide_width=int(metadata.size.width.pixel),
+        slide_height=int(metadata.size.height.pixel),
         mask_magnification=mask_magnification,
         slide_magnification=metadata.levels,
         tile_size=tile_size
@@ -379,7 +377,7 @@ def get_coords(
     return self.replace(sig)
 
 
-@celery_app.task(ignore_result=True, track_started=True)
+@celery_app.task(ignore_result=True, track_started=True, queue="AL")
 def process_wsi(
     path: str,
     tile_size: int = 2048
@@ -419,7 +417,7 @@ def get_list_of_wsi_files() -> list[str]:
     ]
 
 
-@shared_task(ignore_result=True)
+@shared_task(ignore_result=True, queue="AL")
 def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
     with get_session() as session:
         hashes = [metadata.hash for metadata in metadatas]
@@ -455,7 +453,7 @@ def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
 @shared_task(ignore_result=True, queue="reader")
 def synchronize_slides() -> None:
     chain = get_list_of_wsi_files.s() | dmap.s(
-        download_metadata.s()
+        download_metadata.s(),
     ) | store_metadata.s()
 
     return chain()
