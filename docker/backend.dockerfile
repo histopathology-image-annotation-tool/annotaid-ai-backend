@@ -51,7 +51,9 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
 USER ml-api-user
 
 COPY src/ /code/src
+COPY alembic.ini /code/
+COPY --chown=744 scripts/api/prestart.sh scripts/api/start.sh ./
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0"]
+CMD ["./start.sh", "uvicorn", "src.main:app", "--host", "0.0.0.0"]

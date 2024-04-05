@@ -6,10 +6,10 @@ from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import (
     TIMESTAMP,
     UUID,
-    VARCHAR,
     Enum,
     Float,
     ForeignKey,
+    Index,
     String,
     text,
 )
@@ -37,8 +37,8 @@ class WholeSlideImage(Base):
         index=True,
         unique=True
     )
-    path: Mapped[str] = mapped_column(VARCHAR(256), nullable=False)
-    format: Mapped[str] = mapped_column(VARCHAR(20), nullable=False)
+    path: Mapped[str] = mapped_column(String(256), nullable=False)
+    format: Mapped[str] = mapped_column(String(20), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -104,6 +104,15 @@ class Prediction(Base):
         onupdate=text("now()")
     )
 
+    __table_args__ = (
+        Index(
+            "order_probability_asc_idx",
+            "probability",
+            postgresql_using="btree",
+            postgresql_ops={"probability": "ASC"}
+        ),
+    )
+
 
 class Annotation(Base):
     __tablename__ = "annotations"
@@ -139,4 +148,13 @@ class Annotation(Base):
         nullable=False,
         server_default=text("now()"),
         onupdate=text("now()")
+    )
+
+    __table_args__ = (
+        Index(
+            "order_created_at_desc_idx",
+            "created_at",
+            postgresql_using="btree",
+            postgresql_ops={"created_at": "DESC"}
+        ),
     )

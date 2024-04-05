@@ -21,6 +21,7 @@ asyncpg = "^0.29.0"
 fastapi = "^0.110.1"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 numpy = "^1.26.1"
+tenacity = "^8.2.3"
 
 [tool.poetry.group.celery.dependencies]
 flower = "^2.0.1"
