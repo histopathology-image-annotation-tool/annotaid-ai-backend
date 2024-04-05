@@ -198,8 +198,8 @@ def get_tiles_coords_from_tissue_mask(
     magnifier = 2**(slide_magnification - mask_magnification)
     step = int(tile_size * (1 - overlap))
 
-    for y in range(20000, slide_height, step):
-        for x in range(20000, slide_width, step):
+    for y in range(0, slide_height, step):
+        for x in range(0, slide_width, step):
             x_start = x // magnifier
             y_start = y // magnifier
 
@@ -322,10 +322,11 @@ def process_tile(
 def get_slide_best_magnification(
     slide_path: str,
     tile_size: int = 2048
-) -> tuple[int, GetSlideMetadataResponse]:
+) -> tuple[int, GetSlideMetadataResponse, GetSlideMetadataResponse]:
     current_magnification = 0
     max_magnification: int | None = None
-    metadata = None
+    mask_metadata = None
+    slide_metadata = None
 
     with httpx.Client() as client:
         while max_magnification is None or current_magnification < max_magnification:
@@ -336,25 +337,33 @@ def get_slide_best_magnification(
                 }
             )
             response = response.json()
-            metadata = GetSlideMetadataResponse(**response)
+            mask_metadata = GetSlideMetadataResponse(**response)
+
+            if slide_metadata is None:
+                slide_metadata = mask_metadata
 
             if max_magnification is None:
-                max_magnification = metadata.levels
+                max_magnification = mask_metadata.levels
 
-            if metadata.size.width.pixel <= tile_size or metadata.size.\
+            if mask_metadata.size.width.pixel <= tile_size or mask_metadata.size.\
                 height.pixel <= tile_size:  # noqa: E125
                 break
 
             current_magnification += 1
 
-    return max_magnification - current_magnification, metadata
+    return (
+        max_magnification - current_magnification,
+        mask_metadata,
+        slide_metadata
+    )
 
 
 @celery_app.task(bind=True, ignore_result=True, queue="AL")
 def get_coords(
     self: Task,
     mask_magnification: int,
-    metadata: GetSlideMetadataResponse,
+    mask_metadata: GetSlideMetadataResponse,
+    slide_metadata: GetSlideMetadataResponse,
     path: str,
     tile_size: int = 2048
 ) -> list[tuple[int, int]]:
@@ -367,10 +376,10 @@ def get_coords(
     ) | create_tissue_mask.s(
 
     ) | get_tiles_coords_from_tissue_mask.s(
-        slide_width=int(metadata.size.width.pixel),
-        slide_height=int(metadata.size.height.pixel),
+        slide_width=int(slide_metadata.size.width.pixel),
+        slide_height=int(slide_metadata.size.height.pixel),
         mask_magnification=mask_magnification,
-        slide_magnification=metadata.levels,
+        slide_magnification=slide_metadata.levels,
         tile_size=tile_size
     )
 

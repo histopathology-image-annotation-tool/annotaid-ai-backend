@@ -5,13 +5,13 @@ from functools import reduce
 from typing import Annotated, Any
 
 import numpy as np
-import redis
-from celery.result import AsyncResult
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 from fastapi.responses import JSONResponse
+from redis import Redis
 
+from celery.result import AsyncResult
 from src.core.celery import celery_app
-from src.core.config import settings
+from src.core.redis import get_redis_session
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.sam import (
     GetSAMEmbeddingsRequest,
@@ -23,8 +23,6 @@ from src.schemas.shared import BoundingBox
 from src.utils.api import load_image
 
 router = APIRouter()
-
-r = redis.Redis.from_url(str(settings.CELERY_BACKEND_URL))
 
 
 @router.post(
@@ -81,13 +79,16 @@ async def get_sam_embeddings_result(
     '/models/sam',
     response_model=SAMPredictResponse
 )
-async def predict_sam(request: Annotated[
-    SAMPredictRequest,
-    Body(
-        openapi_examples=SAMPredictRequest.model_config
-        ['json_schema_extra']['openapi_examples']
-    )
-]) -> SAMPredictResponse:
+async def predict_sam(
+    request: Annotated[
+        SAMPredictRequest,
+        Body(
+            openapi_examples=SAMPredictRequest.model_config
+            ['json_schema_extra']['openapi_examples']
+        )
+    ],
+    r: Redis = Depends(get_redis_session)
+) -> SAMPredictResponse:
     """Endpoint for the SAM segmentation."""
     def _transform_keypoints(
         acc: defaultdict[str, list[Any]],
@@ -138,7 +139,7 @@ async def predict_sam(request: Annotated[
 
     result = task.get()
 
-    return {  # type: ignore
+    return {
         'segmented_objects': result['segmented_objects'],
         "previous_predict_task_id": task.task_id
     }

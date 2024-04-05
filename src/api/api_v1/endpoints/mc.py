@@ -1,10 +1,10 @@
 import uuid
 
 import numpy as np
-from celery.result import AsyncResult
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from celery.result import AsyncResult
 from src.core.celery import celery_app
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.mc import MCPredictRequest, MCPredictResponse, MitosisLabel
