@@ -22,7 +22,7 @@ from src.schemas.active_learning import (
     WholeSlideImageWithMetadata,
 )
 from src.schemas.celery import AsyncTaskResponse
-from src.schemas.shared import HTTPError
+from src.schemas.shared import CUID, HTTPError
 from src.utils.pagination import PaginatedParams, paginate
 
 router = APIRouter()
@@ -94,7 +94,7 @@ async def predict_slide(
 @router.get('/active_learning/slides')
 async def get_slides(
     params: PaginatedParams = Depends(),
-    user_id: str | None = None,
+    user_id: CUID | None = None,
     db: AsyncSession = Depends(get_async_session)
 ) -> PaginatedResponse[WholeSlideImageWithMetadata]:
     slides_query = select(db_models.WholeSlideImage)
@@ -208,7 +208,7 @@ async def get_slides(
 )
 async def get_slide(
     slide_id: uuid.UUID,
-    user_id: str | None = None,
+    user_id: CUID | None = None,
     db: AsyncSession = Depends(get_async_session)
 ) -> WholeSlideImageWithMetadata:
     # Check if the slide is in database
@@ -325,7 +325,7 @@ async def synchronize_slides() -> AsyncTaskResponse:
 )
 async def get_slide_prediction_for_annotation(
     slide_id: uuid.UUID,
-    user_id: str,
+    user_id: CUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> Prediction | None:
     # Check if the slide is in database
@@ -354,7 +354,7 @@ async def get_slide_prediction_for_annotation(
 )
 async def get_slide_annotations(
     slide_id: uuid.UUID,
-    user_id: str,
+    user_id: CUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> list[Annotation]:
     # Check if the slide is in database
@@ -472,7 +472,7 @@ async def upsert_slide_annotations(
         request.user_id
     )
 
-    return {  # type: ignore
+    return {
         'annotation': annotation,
         'next_annotation': next_annotation
     }
@@ -481,7 +481,7 @@ async def upsert_slide_annotations(
 async def get_next_annotation(
     db: AsyncSession,
     slide_id: uuid.UUID,
-    user_id: str
+    user_id: CUID
 ) -> Prediction | None:
     # Get annotation (prediction) for the slide for the given user
     query = select(db_models.Prediction).select_from(

@@ -2,6 +2,8 @@ import numpy as np
 from monai.apps.pathology.transforms.stain.array import NormalizeHEStains
 from sahi.predict import get_sliced_prediction
 
+from celery import Task
+from src.celery.shared.tasks import noop
 from src.core.celery import celery_app
 from src.models import predict_mc_second_stage
 from src.models.mc.custom_types import MitosisPrediction
@@ -104,7 +106,7 @@ def apply_offset_to_bboxes(
 
 @celery_app.task(bind=True, ignore_result=True)
 def _predict_mc_task(
-    self,
+    self: Task,
     image: np.ndarray,
     offset: tuple[int, int]
 ) -> list[MitosisPrediction]:
@@ -136,4 +138,7 @@ def predict_mc_task(
     Returns:
         list[MitosisPrediction]: The predictions for the mitotic candidates.
     """
-    return _predict_mc_task(image, offset)()
+    # When _predict_mc_task is called, it does not return a result, so we use noop
+    # (temporary solution until we find a better way to handle this case)
+    chain = _predict_mc_task.s(image, offset) | noop.s()
+    return chain()

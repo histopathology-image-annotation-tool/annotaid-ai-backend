@@ -2,13 +2,13 @@ import asyncio
 import uuid
 
 import numpy as np
-import redis
-from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from redis import Redis
 
+from celery.result import AsyncResult
 from src.core.celery import celery_app
-from src.core.config import settings
+from src.core.redis import get_redis_session
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.nuclick import (
     Keypoint,
@@ -20,14 +20,15 @@ from src.utils.api import load_image
 
 router = APIRouter()
 
-r = redis.Redis.from_url(str(settings.CELERY_BACKEND_URL))
-
 
 @router.post(
     '/models/nuclick',
     response_model=NuclickPredictResponse,
 )
-async def predict_nuclick(request: NuclickPredictRequest) -> NuclickPredictResponse:
+async def predict_nuclick(
+    request: NuclickPredictRequest,
+    r: Redis = Depends(get_redis_session)
+) -> NuclickPredictResponse:
     """Endpoint for the nuclei segmentation."""
     image = await load_image(request.image)
     image = np.array(image)
