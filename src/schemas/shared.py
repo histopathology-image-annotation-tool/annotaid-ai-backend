@@ -1,5 +1,7 @@
+from typing import Annotated
+
 from geoalchemy2 import WKTElement
-from pydantic import BaseModel, NonNegativeFloat, PositiveFloat
+from pydantic import BaseModel, Field, NonNegativeFloat, PositiveFloat
 
 
 class Keypoint(BaseModel):
@@ -32,3 +34,16 @@ class HTTPError(BaseModel):
         json_schema_extra = {
             "example": {"detail": "HTTPException raised."},
         }
+
+
+CUID = Annotated[
+    str,
+    Field(
+        pattern=r"^c[a-z0-9]{24}$",
+        json_schema_extra={
+            "format": "cuid",
+        },
+        description="A unique identifier.",
+        example="cltstu4pu0001do2i6vdmtgkz"
+    )
+]

@@ -16,7 +16,7 @@ from pydantic import (
 from shapely import Polygon, wkb
 
 from .mc import MitosisLabel
-from .shared import BoundingBox
+from .shared import CUID, BoundingBox
 
 AnnotationLabel = Annotated[Union[MitosisLabel, Literal["unknown"]], None]
 
@@ -109,7 +109,7 @@ class ALPredictSlideRequest(BaseModel):
 class Annotation(BaseModel):
     """Represents an annotation."""
     id: UUID
-    user_id: str
+    user_id: CUID
     bbox: BoundingBox
     label: AnnotationLabel
     message: str | None = None
@@ -167,7 +167,7 @@ class WholeSlideImageWithMetadata(BaseModel):
 
 class UpsertSlideAnnotationRequest(BaseModel):
     """Represents a request to upsert an annotation."""
-    user_id: str
+    user_id: CUID
     bbox: BoundingBox
     label: AnnotationLabel
     message: str | None = None

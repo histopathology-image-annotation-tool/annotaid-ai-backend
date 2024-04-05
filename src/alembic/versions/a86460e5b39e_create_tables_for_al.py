@@ -115,7 +115,7 @@ def upgrade() -> None:
     op.create_table(
         'annotations',
         sa.Column('id', sa.UUID(as_uuid=True), primary_key=True),
-        sa.Column('user_id', sa.String(30), nullable=False, index=True),
+        sa.Column('user_id', sa.String(25), nullable=False, index=True),
         sa.Column(
             'prediction_id',
             sa.UUID(as_uuid=True),

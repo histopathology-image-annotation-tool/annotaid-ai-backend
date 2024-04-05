@@ -122,7 +122,7 @@ class Annotation(Base):
         primary_key=True,
         default=uuid.uuid4
     )
-    user_id: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     prediction: Mapped["Prediction"] = relationship(
         'Prediction',
         back_populates="annotations",

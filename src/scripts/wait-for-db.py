@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 MAX_TRIES = 60 * 5  # 5 minutes
-WAIT_SECONDS = 1
+WAIT_SECONDS = 5
 
 
 @retry(

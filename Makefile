@@ -35,7 +35,7 @@ endif
 # Download NuClick weights
 download_nuclick_weights:
 ifeq ($(OS),Windows_NT)
-	powershell .\scripts\download_nuclick_weights.ps1
+	powershell .\scripts\weights\download_nuclick_weights.ps1
 else
 	./scripts/weights/download_nuclick_weights.sh
 endif
@@ -43,7 +43,7 @@ endif
 # Download MC weights
 download_mc_weights:
 ifeq ($(OS),Windows_NT)
-	powershell .\scripts\download_mc_weights.ps1
+	powershell .\scripts\weights\download_mc_weights.ps1
 else
 	./scripts/weights/download_mc_weights.sh
 endif
@@ -51,7 +51,7 @@ endif
 # Download NP weights
 download_np_weights:
 ifeq ($(OS),Windows_NT)
-	powershell .\scripts\download_np_weights.ps1
+	powershell .\scripts\weights\download_np_weights.ps1
 else
 	./scripts/weights/download_np_weights.sh
 endif
@@ -59,7 +59,7 @@ endif
 # Download SAM weights
 download_sam_weights:
 ifeq ($(OS),Windows_NT)
-	powershell .\scripts\download_sam_weights.ps1
+	powershell .\scripts\weights\download_sam_weights.ps1
 else
 	./scripts/weights/download_sam_weights.sh
 endif
@@ -90,18 +90,18 @@ run_be:
 ifeq ($(env),docker)
 	@docker run -dt -p 8000:8000 --env-file .env annotaid/backend.dev
 else ifeq ($(env),local)
-	@uvicorn src.main:app --reload
+	@watchmedo auto-restart --directory=./src --pattern=* --recursive -- uvicorn src.main:app
 else
 	@echo "Invalid arguments, supported only: docker, local"
 	@echo "Examples:"
-	@echo " make run_be env=dev"
+	@echo " make run_be env=local"
 endif
 
 run_worker:
 ifeq ($(env),docker)
 	@docker run -dt --env-file .env annotaid/worker.dev
 else ifeq ($(env),local)
-	@celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL,reader
+	@watchmedo auto-restart --directory=./src/celery --pattern=*.py --recursive -- celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL,reader
 else
 	@echo "Invalid arguments, supported only: docker, local"
 	@echo "Examples:"
@@ -109,19 +109,38 @@ else
 endif
 
 run_redis:
+	@docker stop redis || true
+	@docker rm redis || true
 	@docker run -p 6379:6379 --name redis -d redis
 
 run_postgis:
-	@docker run -p 5432:5432 --name postgis -e POSTGRES_DB=annotaid -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -d postgis/postgis
+	@docker stop postgis || true
+	@docker rm postgis || true
+	@docker volume create annotaid_data || true
+	@docker run -p 5432:5432 --name postgis --env-file .env -v annotaid_data:/var/lib/postgresql/data -d postgis/postgis
+
+	@$(MAKE) migrate
 
 run:
 ifeq ($(env),prod)
 	@docker-compose -f ./docker/docker-compose.dev.yml -f ./docker/docker-compose.prod.yml up
-else
+else ifeq ($(env),dev)
 	@docker-compose -f ./docker/docker-compose.dev.yml up
+else ifeq ($(env),local)
+	@$(MAKE) -j run_redis run_postgis run_worker env=local run_be env=local
+else
+	@echo "Invalid arguments, supported only: dev, prod, local"
+	@echo "Examples:"
+	@echo " make run env=local"
 endif
 
-.PHONY: help
+migrate:
+	@$(PYTHON) -m src.scripts.wait-for-db
+	@alembic upgrade head
+
+.PHONY: venv activate download_weights download_nuclick_weights download_mc_weights \
+	download_sam_weights build_be build_worker run_be run_worker run_redis run_postgis \
+	run migrate help
 help:
 	@echo "Commands                :"
 	@echo "venv                    : creates a virtual environment."
@@ -136,5 +155,6 @@ help:
 	@echo "run_be                  : runs backend"
 	@echo "run_worker              : runs celery worker"
 	@echo "run_redis               : runs redis docker image"
-	@echo "run_postgis             : runs postgis docker image"
-	@echo "run                     : runs docker-compose"
+	@echo "run_postgis             : runs postgis docker image and migrations"
+	@echo "run                     : runs docker-compose or local dev"
+	@echo "migrate                 : runs migrations"

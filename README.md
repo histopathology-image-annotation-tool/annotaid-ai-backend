@@ -31,25 +31,7 @@ make download_weights
 
 #### Run the project
 ```
-make run_be env=local
-make run_worker env=local
-make run_redis
-make run_postgis
-```
-
-### Docker
-#### Setup .env file
-Rename .env.sample to .env and update CELERY_BROKER_URL and CELERY_BACKEND_URL from localhost to `redis` container name.
-
-#### Compose the project
-dev:
-```
-make run
-```
-
-prod:
-```
-make run env=prod
+make run env=local
 ```
 
 ## Documentation

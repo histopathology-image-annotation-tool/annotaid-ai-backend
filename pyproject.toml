@@ -65,6 +65,7 @@ autopep8 = "^2.0.4"
 safety = "^2.3.5"
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
+watchdog = "^4.0.0"
 
 [[tool.poetry.source]]
 name = "fury"
@@ -123,7 +124,7 @@ profile = "wemake"
 
 [tool.semantic_release]
 assets = []
-commit_message = "chore(release): v{version} [skip ci]"
+commit_message = "chore: release v{version} [skip ci]"
 commit_parser = "angular"
 logging_use_named_masks = false
 major_on_zero = true
