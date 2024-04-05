@@ -112,7 +112,7 @@ run_redis:
 	@docker run -p 6379:6379 --name redis -d redis
 
 run_postgis:
-	@docker run -p 5432:5432 --name postgis -e POSTGRES_PASSWORD=postgres -d postgis/postgis
+	@docker run -p 5432:5432 --name postgis -e POSTGRES_DB=annotaid -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -d postgis/postgis
 
 run:
 ifeq ($(env),prod)
