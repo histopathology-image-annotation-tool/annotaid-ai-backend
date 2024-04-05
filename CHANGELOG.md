@@ -2,7 +2,36 @@
 
 
 
+## v0.3.0 (2024-04-05)
+
+### Chore
+
+* chore: fix nvidia dependencies ([`bf27435`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/bf2743509e85646098c511f7bf8fbffcf5248b59))
+
+### Feature
+
+* feat: update migrations and add watchdog ([`2e0421a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/2e0421a045d484d8247e90de60ba6b3fcb34dc40))
+
+* feat: add alembic migrations ([`a256543`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/a256543905e8b7738605f7ae1d7b4b0cdf8f8a27))
+
+### Fix
+
+* fix: mc endpoint ([`11f13d8`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/11f13d8e3da8e8dffc2c6566eb5c05c8d81f218e))
+
+* fix: add missing dependency ([`872a82f`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/872a82f361f1d71bb7eacd99e92e37b7d1a96b8d))
+
+### Unknown
+
+* Merge branch &#39;main&#39; of https://github.com/histopathology-image-annotation-tool/annotaid_ai_backend ([`a78948b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/a78948b3a38475ab594cf866b028638c14243ea8))
+
+* Merge branch &#39;fix/active_learning&#39; ([`7ddce53`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/7ddce53871546b6affa758ff62fa95cbc4168608))
+
+
 ## v0.2.4 (2024-04-05)
+
+### Chore
+
+* chore(release): v0.2.4 [skip ci] ([`e8cd9c9`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/e8cd9c90b4211ea47d67f024f3662d46267fc2d9))
 
 ### Fix
 
