@@ -2,7 +2,18 @@
 
 
 
+## v0.2.3 (2024-04-05)
+
+### Fix
+
+* fix: shapely dependency ([`34dd5fa`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/34dd5fad5170e545ce79183448f23cddaa8a63dc))
+
+
 ## v0.2.2 (2024-04-04)
+
+### Chore
+
+* chore(release): v0.2.2 [skip ci] ([`654cff3`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/654cff370e7348d84cd4af41af35f116030888b5))
 
 ### Fix
 
