@@ -10,16 +10,17 @@ from PIL import Image
 from sqlalchemy import desc
 
 import src.db_models as db_models
-from celery import Task, shared_task
+from celery import Task, shared_task, subtask
+from src.celery import AL_QUEUE, AL_QUEUE_1, READER_QUEUE
 from src.celery.database import get_session
 from src.celery.mc.tasks import _predict_mc_task
-from src.celery.shared import dmap, expand_args, residual
+from src.celery.shared import dmap, expand_args
 from src.core.celery import celery_app
 from src.core.config import settings
 from src.models.mc.custom_types import MitosisPrediction
 
 from .definitions import GetSlideMetadataResponse
-from .utils import convert_bbox_to_wkt, join_url
+from .utils import convert_bbox_to_wkt, join_url, transform_label
 
 MITOSIS_MEAN_LAB = np.array([52.357067, 29.037254, -30.11074], dtype=np.float32)
 
@@ -32,7 +33,7 @@ MITOSIS_MEAN_LAB = np.array([52.357067, 29.037254, -30.11074], dtype=np.float32)
     retry_backoff=True,
     retry_backoff_max=500,
     retry_jitter=True,
-    queue="reader"
+    queue=READER_QUEUE
 )
 def download_tile(
     level: int,
@@ -62,7 +63,7 @@ def download_tile(
     retry_backoff=True,
     retry_backoff_max=500,
     retry_jitter=True,
-    queue="reader"
+    queue=READER_QUEUE
 )
 def crop_tile(
     slide_path: str,
@@ -92,7 +93,7 @@ def crop_tile(
     retry_backoff=True,
     retry_backoff_max=500,
     retry_jitter=True,
-    queue="reader"
+    queue=READER_QUEUE
 )
 def download_metadata(
     slide_path: str,
@@ -109,7 +110,7 @@ def download_metadata(
     return GetSlideMetadataResponse(**response)
 
 
-@celery_app.task(ignore_result=True, queue="AL")
+@celery_app.task(ignore_result=True, queue=AL_QUEUE)
 def create_tissue_mask(
     image: np.ndarray,
     median_blur: int = 5,
@@ -149,14 +150,14 @@ def create_tissue_mask(
     return output_image
 
 
-@celery_app.task(ignore_result=True, queue="AL")
+@celery_app.task(ignore_result=True, queue=AL_QUEUE)
 def clean_data(
-    image: np.ndarray,
-    mitoses: list[MitosisPrediction]
+    mitoses: list[MitosisPrediction],
+    image: np.ndarray
 ) -> list[MitosisPrediction]:
     cleared_mitoses: list[MitosisPrediction] = []
 
-    for index, mitos in enumerate(mitoses):
+    for mitos in mitoses:
         bbox = mitos['bbox']
         x1, y1, x2, y2 = bbox
 
@@ -176,14 +177,11 @@ def clean_data(
 
         if np.sum(difference_threshold == 255) / difference_threshold.size >= 0.02:
             cleared_mitoses.append(mitos)
-        else:
-            patch_pil = Image.fromarray(image[y1:y2, x1:x2])
-            patch_pil.save(f"pokuss/{index}_{mitos['label']}.png")
 
     return cleared_mitoses
 
 
-@celery_app.task(ignore_result=True, queue="AL")
+@celery_app.task(ignore_result=True, queue=AL_QUEUE)
 def get_tiles_coords_from_tissue_mask(
     mask: np.ndarray,
     slide_width: int,
@@ -216,7 +214,16 @@ def get_tiles_coords_from_tissue_mask(
     return coords
 
 
-@celery_app.task(ignore_result=True, queue="AL")
+@celery_app.task(
+    ignore_result=True,
+    acks_late=True,
+    autoretry_for=(Exception,),
+    max_retries=5,
+    retry_backoff=True,
+    retry_backoff_max=500,
+    retry_jitter=True,
+    queue=AL_QUEUE
+)
 def store_predictions(
     predictions: list[MitosisPrediction],
     slide_path: str,
@@ -225,7 +232,7 @@ def store_predictions(
         slide = session.query(
             db_models.WholeSlideImage
         ).filter_by(
-            path=slide_path
+            path=f"{slide_path}"
         ).first()
 
         if slide is None:
@@ -261,7 +268,7 @@ def store_predictions(
                 type='MC_TASK',
                 bbox=bbox_wkt,
                 probability=prediction['conf'],
-                label=str(prediction['label'])
+                label=transform_label(str(prediction['label']))
             )
 
             session.add(prediction)
@@ -269,7 +276,7 @@ def store_predictions(
         session.commit()
 
 
-@shared_task(ignore_result=True, queue="AL")
+@shared_task(ignore_result=True, queue=AL_QUEUE)
 def add_offset(
     mitosis: list[MitosisPrediction],
     offset: tuple[int, int]
@@ -284,7 +291,22 @@ def add_offset(
     return copied_mitosis
 
 
-@celery_app.task(bind=True, ignore_result=True, queue="AL")
+@celery_app.task(bind=True, ignore_result=True, queue=AL_QUEUE)
+def predict_mitoses_and_clean_result(
+    self: Task,
+    image: np.ndarray
+) -> list[MitosisPrediction]:
+    sig = subtask(
+        _predict_mc_task.s(image=image, offset=(0, 0)),
+        queue=AL_QUEUE
+    ) | clean_data.s(
+        image=image
+    )
+
+    return self.replace(sig)
+
+
+@celery_app.task(bind=True, ignore_result=True, queue=AL_QUEUE_1)
 def process_tile(
     self: Task,
     coords: np.ndarray,
@@ -296,11 +318,7 @@ def process_tile(
         x=coords[0],
         y=coords[1],
         tile_size=tile_size
-    ) | residual.s(
-        _predict_mc_task.s(offset=(0, 0))
-    ) | expand_args.s(
-        clean_data.s()
-    ) | add_offset.s(
+    ) | predict_mitoses_and_clean_result.s() | add_offset.s(
         offset=(coords[0], coords[1])
     ) | store_predictions.s(
         slide_path=slide_path
@@ -317,7 +335,7 @@ def process_tile(
     retry_backoff=True,
     retry_backoff_max=500,
     retry_jitter=True,
-    queue="reader"
+    queue=READER_QUEUE
 )
 def get_slide_best_magnification(
     slide_path: str,
@@ -358,7 +376,7 @@ def get_slide_best_magnification(
     )
 
 
-@celery_app.task(bind=True, ignore_result=True, queue="AL")
+@celery_app.task(bind=True, ignore_result=True, queue=AL_QUEUE)
 def get_coords(
     self: Task,
     mask_magnification: int,
@@ -386,7 +404,7 @@ def get_coords(
     return self.replace(sig)
 
 
-@celery_app.task(ignore_result=True, track_started=True, queue="AL")
+@celery_app.task(ignore_result=True, track_started=True, queue=AL_QUEUE)
 def process_slide(
     path: str,
     tile_size: int = 2048
@@ -394,11 +412,14 @@ def process_slide(
     chain = get_slide_best_magnification.s(
         slide_path=path,
         tile_size=tile_size
-    ) | expand_args.s(
-        get_coords.s(
-            path=path,
-            tile_size=tile_size
-        )
+    ) | subtask(
+        expand_args.s(
+            get_coords.s(
+                path=path,
+                tile_size=tile_size
+            )
+        ),
+        queue=AL_QUEUE
     ) | dmap.s(
         process_tile.s(
             slide_path=path,
@@ -409,7 +430,7 @@ def process_slide(
     return chain()
 
 
-@shared_task(ignore_result=True, queue="reader")
+@shared_task(ignore_result=True, queue=READER_QUEUE)
 def get_list_of_slide_files() -> list[str]:
     response = httpx.get(
         join_url(settings.READER_URL, "/ls/mnt"),
@@ -426,7 +447,16 @@ def get_list_of_slide_files() -> list[str]:
     ]
 
 
-@shared_task(ignore_result=True, queue="AL")
+@shared_task(
+    ignore_result=True,
+    acks_late=True,
+    autoretry_for=(Exception,),
+    max_retries=5,
+    retry_backoff=True,
+    retry_backoff_max=500,
+    retry_jitter=True,
+    queue=AL_QUEUE
+)
 def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
     with get_session() as session:
         hashes = [metadata.hash for metadata in metadatas]
@@ -459,10 +489,13 @@ def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
         session.commit()
 
 
-@shared_task(ignore_result=True, queue="reader")
+@shared_task(ignore_result=True, queue=READER_QUEUE)
 def synchronize_slides() -> None:
-    chain = get_list_of_slide_files.s() | dmap.s(
-        download_metadata.s(),
+    chain = get_list_of_slide_files.s() | subtask(
+        dmap.s(
+            download_metadata.s()
+        ),
+        queue=READER_QUEUE
     ) | store_metadata.s()
 
     return chain()

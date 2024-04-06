@@ -1,0 +1,3 @@
+READER_QUEUE = "reader"
+AL_QUEUE = "AL"
+AL_QUEUE_1 = "AL:1"

@@ -91,7 +91,7 @@ class Prediction(Base):
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
     )
     probability: Mapped[float] = mapped_column(Float, nullable=False)
-    label: Mapped[str] = mapped_column(String(15), nullable=False)
+    label: Mapped[str] = mapped_column(String(25), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -136,7 +136,7 @@ class Annotation(Base):
     bbox: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
     )
-    label: Mapped[str] = mapped_column(String(15), nullable=False)
+    label: Mapped[str] = mapped_column(String(25), nullable=False)
     message: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),

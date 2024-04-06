@@ -80,7 +80,7 @@ def upgrade() -> None:
             nullable=False
         ),
         sa.Column('probability', sa.Float, nullable=False),
-        sa.Column('label', sa.String(15), nullable=False),
+        sa.Column('label', sa.String(25), nullable=False),
         sa.Column(
             'created_at',
             sa.TIMESTAMP(timezone=True),
@@ -129,7 +129,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             'label',
-            sa.String(15),
+            sa.String(25),
             nullable=False
         ),
         sa.Column('message', sa.String(256)),
