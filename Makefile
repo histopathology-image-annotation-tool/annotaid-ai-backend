@@ -109,14 +109,14 @@ else
 endif
 
 run_redis:
-	@docker stop redis || true
-	@docker rm redis || true
+	@docker stop redis || exit 0
+	@docker rm redis || exit 0
 	@docker run -p 6379:6379 --name redis -d redis
 
 run_postgis:
-	@docker stop postgis || true
-	@docker rm postgis || true
-	@docker volume create annotaid_data || true
+	@docker stop postgis || exit 0
+	@docker rm postgis || exit 0
+	@docker volume create annotaid_data || exit 0
 	@docker run -p 5432:5432 --name postgis --env-file .env -v annotaid_data:/var/lib/postgresql/data -d postgis/postgis
 
 	@$(MAKE) migrate

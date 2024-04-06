@@ -30,6 +30,46 @@ def transform_label(label: str) -> MitosisLabel | str:
     return _mapping.get(label, label)
 
 
+class Counts(BaseModel):
+    """Represents counts of annotations."""
+    unknown: NonNegativeInt
+    mitosis: NonNegativeInt
+    hard_negative_mitosis: NonNegativeInt
+
+    @classmethod
+    def from_dict(cls, data: dict[str, int]) -> 'Counts':
+        def _get_data(key: str) -> int:
+            _mappings = {
+                'mitosis': ['0', 'mitosis'],
+                'hard_negative_mitosis': ['1', 'hard_negative_mitosis'],
+                'unknown': ['unknown']
+            }
+
+            for value in _mappings[key]:
+                if value in data:
+                    return data[value]
+
+            return 0
+
+        return cls(
+            unknown=_get_data('unknown'),
+            mitosis=_get_data('mitosis'),
+            hard_negative_mitosis=_get_data('hard_negative_mitosis')
+        )
+
+
+class AnnotationMetadata(BaseModel):
+    """Represents metadata about an slide annotations."""
+    user_annotated: Counts | None = Field(
+        None,
+        description="Counts of annotations annotated by user"
+    )
+    total: Counts = Field(
+        ...,
+        description="Counts of annotations predicted by the model"
+    )
+
+
 class WholeSlideImage(BaseModel):
     """Represents a whole slide image."""
     id: UUID
@@ -65,7 +105,7 @@ class WholeSlideImage(BaseModel):
 
 class Prediction(BaseModel):
     id: UUID
-    wsi_id: UUID
+    slide_id: UUID
     bbox: BoundingBox
     probability: NonNegativeFloat
     label: AnnotationLabel
@@ -99,6 +139,12 @@ class Prediction(BaseModel):
     @classmethod
     def transform_probability(cls, probability: float) -> float:
         return round(probability, 4)
+
+
+class PredictionWithMetadata(BaseModel):
+    """Represents a prediction with metadata."""
+    prediction: Prediction
+    metadata: AnnotationMetadata
 
 
 class ALPredictSlideRequest(BaseModel):
@@ -140,25 +186,6 @@ class Annotation(BaseModel):
     _transform_label = field_validator('label', mode="before")(transform_label)
 
 
-class Counts(BaseModel):
-    """Represents counts of annotations."""
-    mitosis: NonNegativeInt
-    hard_negative_mitosis: NonNegativeInt
-
-    @classmethod
-    def from_dict(cls, data: dict[str, int]) -> 'Counts':
-        return cls(mitosis=data.get('0', 0), hard_negative_mitosis=data.get('1', 0))
-
-
-class AnnotationMetadata(BaseModel):
-    """Represents metadata about an slide annotations."""
-    user_annotated: Counts | None = Field(
-        None,
-        description="Counts of annotations annotated by user"
-    )
-    total: Counts
-
-
 class WholeSlideImageWithMetadata(BaseModel):
     """Represents a response containing a list of slides."""
     slide: WholeSlideImage
@@ -178,6 +205,7 @@ class UpsertSlideAnnotationResponse(BaseModel):
     prediction to annotate."""
     annotation: Annotation
     next_annotation: Prediction | None = None
+    metadata: AnnotationMetadata
 
 
 M = TypeVar('M', bound=BaseModel)

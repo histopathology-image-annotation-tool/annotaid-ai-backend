@@ -217,22 +217,22 @@ def get_tiles_coords_from_tissue_mask(
 
 
 @celery_app.task(ignore_result=True, queue="AL")
-def store_annotations(
-    annotations: list[MitosisPrediction],
+def store_predictions(
+    predictions: list[MitosisPrediction],
     slide_path: str,
 ) -> None:
     with get_session() as session:
-        wsi = session.query(
+        slide = session.query(
             db_models.WholeSlideImage
         ).filter_by(
             path=slide_path
         ).first()
 
-        if wsi is None:
+        if slide is None:
             raise ValueError(f'Whole slide image with path {slide_path} not found')
 
-        for annotation in annotations:
-            bbox = annotation['bbox']
+        for prediction in predictions:
+            bbox = prediction['bbox']
 
             bbox_wkt = convert_bbox_to_wkt(bbox)
 
@@ -257,11 +257,11 @@ def store_annotations(
                     continue
 
             prediction = db_models.Prediction(
-                wsi_id=wsi.id,
+                slide_id=slide.id,
                 type='MC_TASK',
                 bbox=bbox_wkt,
-                probability=annotation['conf'],
-                label=str(annotation['label'])
+                probability=prediction['conf'],
+                label=str(prediction['label'])
             )
 
             session.add(prediction)
@@ -302,7 +302,7 @@ def process_tile(
         clean_data.s()
     ) | add_offset.s(
         offset=(coords[0], coords[1])
-    ) | store_annotations.s(
+    ) | store_predictions.s(
         slide_path=slide_path
     )
 
@@ -387,7 +387,7 @@ def get_coords(
 
 
 @celery_app.task(ignore_result=True, track_started=True, queue="AL")
-def process_wsi(
+def process_slide(
     path: str,
     tile_size: int = 2048
 ) -> None:
@@ -410,7 +410,7 @@ def process_wsi(
 
 
 @shared_task(ignore_result=True, queue="reader")
-def get_list_of_wsi_files() -> list[str]:
+def get_list_of_slide_files() -> list[str]:
     response = httpx.get(
         join_url(settings.READER_URL, "/ls/mnt"),
         params={
@@ -448,20 +448,20 @@ def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
                 slide.hash = metadata.hash
                 slide.path = metadata.path.as_posix()
             else:
-                wsi = db_models.WholeSlideImage(
+                slide = db_models.WholeSlideImage(
                     hash=metadata.hash,
                     path=metadata.path.as_posix(),
                     format=metadata.format
                 )
 
-                session.add(wsi)
+                session.add(slide)
 
         session.commit()
 
 
 @shared_task(ignore_result=True, queue="reader")
 def synchronize_slides() -> None:
-    chain = get_list_of_wsi_files.s() | dmap.s(
+    chain = get_list_of_slide_files.s() | dmap.s(
         download_metadata.s(),
     ) | store_metadata.s()
 

@@ -19,7 +19,7 @@ from src.core.database import Base
 
 
 class WholeSlideImage(Base):
-    __tablename__ = "wsis"
+    __tablename__ = "slides"
 
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -28,7 +28,7 @@ class WholeSlideImage(Base):
     )
     predictions: Mapped[list['Prediction']] = relationship(
         "Prediction",
-        back_populates="wsi",
+        back_populates="slide",
         lazy="selectin"
     )
     hash: Mapped[str] = mapped_column(
@@ -72,13 +72,13 @@ class Prediction(Base):
         ),
         nullable=False
     )
-    wsi: Mapped["WholeSlideImage"] = relationship(
+    slide: Mapped["WholeSlideImage"] = relationship(
         'WholeSlideImage',
         back_populates="predictions",
         lazy="selectin"
     )
-    wsi_id: Mapped[UUID] = mapped_column(
-        ForeignKey('wsis.id', ondelete="CASCADE"),
+    slide_id: Mapped[UUID] = mapped_column(
+        ForeignKey('slides.id', ondelete="CASCADE"),
         nullable=False,
         index=True
     )
