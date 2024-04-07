@@ -21,7 +21,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
-        'wsis',
+        'slides',
         sa.Column(
             'id',
             sa.UUID(as_uuid=True),
@@ -68,9 +68,9 @@ def upgrade() -> None:
             primary_key=True
         ),
         sa.Column(
-            'wsi_id',
+            'slide_id',
             sa.UUID(as_uuid=True),
-            sa.ForeignKey('wsis.id', ondelete="CASCADE"),
+            sa.ForeignKey('slides.id', ondelete="CASCADE"),
             nullable=False,
             index=True
         ),
@@ -80,7 +80,7 @@ def upgrade() -> None:
             nullable=False
         ),
         sa.Column('probability', sa.Float, nullable=False),
-        sa.Column('label', sa.String(15), nullable=False),
+        sa.Column('label', sa.String(25), nullable=False),
         sa.Column(
             'created_at',
             sa.TIMESTAMP(timezone=True),
@@ -129,7 +129,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             'label',
-            sa.String(15),
+            sa.String(25),
             nullable=False
         ),
         sa.Column('message', sa.String(256)),
@@ -159,5 +159,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table('annotations')
     op.drop_table('predictions')
-    op.drop_table('wsis')
+    op.drop_table('slides')
     sa.Enum('MC_TASK', name='prediction_type').drop(op.get_bind())

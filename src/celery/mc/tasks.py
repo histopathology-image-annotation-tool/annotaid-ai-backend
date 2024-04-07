@@ -80,7 +80,7 @@ def predict_mc_second_stage_task(
     )
 
 
-@celery_app.task(ignore_result=False)
+@celery_app.task(ignore_result=True)
 def apply_offset_to_bboxes(
     mitosis_predictions: list[MitosisPrediction],
     offset: tuple[int, int]

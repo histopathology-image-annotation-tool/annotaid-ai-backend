@@ -5,7 +5,7 @@ from celery import Task, group, shared_task, subtask
 from celery.canvas import Signature
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def dmap(self: Task, iterable: Iterable[Signature], callback: Signature) -> Signature:
     # Map a callback over an iterator and return as a group
     callback = subtask(callback)
@@ -14,7 +14,7 @@ def dmap(self: Task, iterable: Iterable[Signature], callback: Signature) -> Sign
     return self.replace(sig)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def expand_args(self: Task, args: Any, func: Signature) -> Signature:
     func = subtask(func)
 
@@ -23,12 +23,12 @@ def expand_args(self: Task, args: Any, func: Signature) -> Signature:
     return self.replace(sig)
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def noop(arg: Any) -> Any:
     return arg
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def residual(self: Task, residual: Any, func: Signature) -> Signature:
     func = subtask(func)
 

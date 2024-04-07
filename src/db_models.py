@@ -19,7 +19,7 @@ from src.core.database import Base
 
 
 class WholeSlideImage(Base):
-    __tablename__ = "wsis"
+    __tablename__ = "slides"
 
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -28,7 +28,7 @@ class WholeSlideImage(Base):
     )
     predictions: Mapped[list['Prediction']] = relationship(
         "Prediction",
-        back_populates="wsi",
+        back_populates="slide",
         lazy="selectin"
     )
     hash: Mapped[str] = mapped_column(
@@ -72,13 +72,13 @@ class Prediction(Base):
         ),
         nullable=False
     )
-    wsi: Mapped["WholeSlideImage"] = relationship(
+    slide: Mapped["WholeSlideImage"] = relationship(
         'WholeSlideImage',
         back_populates="predictions",
         lazy="selectin"
     )
-    wsi_id: Mapped[UUID] = mapped_column(
-        ForeignKey('wsis.id', ondelete="CASCADE"),
+    slide_id: Mapped[UUID] = mapped_column(
+        ForeignKey('slides.id', ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -91,7 +91,7 @@ class Prediction(Base):
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
     )
     probability: Mapped[float] = mapped_column(Float, nullable=False)
-    label: Mapped[str] = mapped_column(String(15), nullable=False)
+    label: Mapped[str] = mapped_column(String(25), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -136,7 +136,7 @@ class Annotation(Base):
     bbox: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
     )
-    label: Mapped[str] = mapped_column(String(15), nullable=False)
+    label: Mapped[str] = mapped_column(String(25), nullable=False)
     message: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),

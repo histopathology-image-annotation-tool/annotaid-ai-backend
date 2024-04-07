@@ -17,6 +17,7 @@ from src.schemas.active_learning import (
     Counts,
     PaginatedResponse,
     Prediction,
+    PredictionWithMetadata,
     UpsertSlideAnnotationRequest,
     UpsertSlideAnnotationResponse,
     WholeSlideImageWithMetadata,
@@ -82,7 +83,7 @@ async def predict_slide(
 
     # Send task to process the slide
     task = celery_app.send_task(
-        'src.celery.active_learning.tasks.process_wsi',
+        'src.celery.active_learning.tasks.process_slide',
         kwargs={
             'path': Path(slide.path).as_posix()
         }
@@ -110,33 +111,7 @@ async def get_slides(
         slide.id for slide in slides['items']
     ]
 
-    total_count_query = select(
-        db_models.Prediction.wsi_id,
-        db_models.Prediction.label,
-        func.count(db_models.Prediction.label).label('count')
-    ).select_from(
-        db_models.Prediction
-    ).where(
-        db_models.Prediction.wsi_id.in_(slide_ids)
-    ).group_by(
-        db_models.Prediction.wsi_id,
-        db_models.Prediction.label
-    )
-
-    total_counts_result = await db.execute(total_count_query)
-    total_counts_result = total_counts_result.fetchall()
-
-    slides_total_count: dict[uuid.UUID, dict[str, int]] = {}
-
-    for row in total_counts_result:
-        slide_id: uuid.UUID = row[0]
-        label: str = row[1]
-        count: int = row[2]
-
-        if slide_id not in slides_total_count:
-            slides_total_count[slide_id] = {}
-
-        slides_total_count[slide_id].update({label: count})
+    slides_total_count = await get_total_predictions_count(db, slide_ids)
 
     results: list[WholeSlideImageWithMetadata] = [
         WholeSlideImageWithMetadata(
@@ -148,39 +123,7 @@ async def get_slides(
     ]
 
     if user_id is not None:
-        user_annotation_count_query = select(
-            db_models.Prediction.wsi_id,
-            db_models.Annotation.label,
-            func.count().label('count')
-        ).select_from(
-            outerjoin(
-                db_models.Annotation,
-                db_models.Prediction,
-                and_(
-                    db_models.Prediction.wsi_id.in_(slide_ids),
-                    db_models.Annotation.user_id == user_id,
-                    db_models.Prediction.id == db_models.Annotation.prediction_id
-                )
-            )
-        ).group_by(
-            db_models.Prediction.wsi_id,
-            db_models.Annotation.label
-        )
-
-        user_annotation_count_result = await db.execute(user_annotation_count_query)
-        user_annotation_count_result = user_annotation_count_result.fetchall()
-
-        user_counts: dict[uuid.UUID, dict[str, int]] = {}
-
-        for row in user_annotation_count_result:
-            slide_id: uuid.UUID = row[0]  # type: ignore
-            label: str = row[1]  # type: ignore
-            count: int = row[2]  # type: ignore
-
-            if slide_id not in user_counts:
-                user_counts[slide_id] = {}
-
-            user_counts[slide_id].update({label: count})
+        user_counts = await get_total_annotations_count(db, slide_ids, user_id)
 
         for result in results:
             result.metadata.user_annotated = Counts.from_dict(
@@ -227,32 +170,7 @@ async def get_slide(
 
     slide = slide[0]
 
-    total_count_query = select(
-        db_models.Prediction.wsi_id,
-        db_models.Prediction.label,
-        func.count(db_models.Prediction.label).label('count')
-    ).select_from(
-        db_models.Prediction
-    ).where(
-        db_models.Prediction.wsi_id.in_([slide_id])
-    ).group_by(
-        db_models.Prediction.wsi_id,
-        db_models.Prediction.label
-    )
-
-    total_counts_result = await db.execute(total_count_query)
-    total_counts_result = total_counts_result.fetchall()
-
-    slides_total_count: dict[uuid.UUID, dict[str, int]] = {}
-
-    for row in total_counts_result:
-        label: str = row[1]
-        count: int = row[2]
-
-        if slide_id not in slides_total_count:
-            slides_total_count[slide_id] = {}
-
-        slides_total_count[slide_id].update({label: count})
+    slides_total_count = await get_total_predictions_count(db, [slide_id])
 
     result = WholeSlideImageWithMetadata(
         slide=slide.__dict__,
@@ -262,39 +180,7 @@ async def get_slide(
     )
 
     if user_id is not None:
-        user_annotation_count_query = select(
-            db_models.Prediction.wsi_id,
-            db_models.Annotation.label,
-            func.count().label('count')
-        ).select_from(
-            outerjoin(
-                db_models.Annotation,
-                db_models.Prediction,
-                and_(
-                    db_models.Prediction.wsi_id.in_([slide_id]),
-                    db_models.Annotation.user_id == user_id,
-                    db_models.Prediction.id == db_models.Annotation.prediction_id
-                )
-            )
-        ).group_by(
-            db_models.Prediction.wsi_id,
-            db_models.Annotation.label
-        )
-
-        user_annotation_count_result = await db.execute(user_annotation_count_query)
-        user_annotation_count_result = user_annotation_count_result.fetchall()
-
-        user_counts: dict[uuid.UUID, dict[str, int]] = {}
-
-        for row in user_annotation_count_result:
-            slide_id = row[0]
-            label = row[1]
-            count = row[2]
-
-            if slide_id not in user_counts:
-                user_counts[slide_id] = {}
-
-            user_counts[slide_id].update({label: count})
+        user_counts = await get_total_annotations_count(db, [slide_id], user_id)
 
         result.metadata.user_annotated = Counts.from_dict(
             user_counts.get(result.slide.id, {})
@@ -320,14 +206,15 @@ async def synchronize_slides() -> AsyncTaskResponse:
     '/active_learning/slides/{slide_id}/predictions',
     responses={
         200: {'model': Optional[Prediction]},
+        204: {'model': None},
         404: {'model': HTTPError}
-    }
+    },
 )
 async def get_slide_prediction_for_annotation(
     slide_id: uuid.UUID,
     user_id: CUID,
     db: AsyncSession = Depends(get_async_session)
-) -> Prediction | None:
+) -> PredictionWithMetadata | None:
     # Check if the slide is in database
     result = await db.execute(
         select(
@@ -342,7 +229,21 @@ async def get_slide_prediction_for_annotation(
     if slide is None:
         raise HTTPException(status_code=404, detail="Item not found")
 
-    return await get_next_annotation(db, slide_id, user_id)
+    prediction = await get_next_annotation(db, slide_id, user_id)
+
+    if prediction is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    user_annotated_count = await get_total_annotations_count(db, [slide_id], user_id)
+    total_count = await get_total_predictions_count(db, [slide_id])
+
+    return {
+        'prediction': prediction,
+        'metadata': AnnotationMetadata(
+            user_annotated=Counts.from_dict(user_annotated_count.get(slide_id, {})),
+            total=Counts.from_dict(total_count.get(slide_id, {}))
+        )
+    }
 
 
 @router.get(
@@ -381,7 +282,7 @@ async def get_slide_annotations(
             db_models.Prediction,
             and_(
                 db_models.Annotation.prediction_id == db_models.Prediction.id,
-                db_models.Prediction.wsi_id == slide_id,
+                db_models.Prediction.slide_id == slide_id,
                 db_models.Annotation.user_id == user_id
             )
         )
@@ -452,29 +353,43 @@ async def upsert_slide_annotations(
         await db.refresh(new_annotation)
 
         response.status_code = status.HTTP_201_CREATED
-        return new_annotation
 
-    annotation = annotation[0]
+        annotation = new_annotation
+    else:
+        annotation = annotation[0]
 
-    if annotation.prediction_id != prediction_id:
-        raise HTTPException(status_code=404, detail="Annotation not found")
+        if annotation.prediction_id != prediction_id:
+            raise HTTPException(status_code=404, detail="Annotation not found")
 
-    annotation.user_id = request.user_id
-    annotation.bbox = request.bbox.convert_to_wkt()
-    annotation.label = request.label
+        annotation.user_id = request.user_id
+        annotation.bbox = request.bbox.convert_to_wkt()
+        annotation.label = request.label
 
-    await db.commit()
-    await db.refresh(annotation)
+        await db.commit()
+        await db.refresh(annotation)
 
     next_annotation = await get_next_annotation(
         db,
-        prediction.wsi_id,
+        prediction.slide_id,
         request.user_id
     )
 
+    user_annotated_count = await get_total_annotations_count(
+        db,
+        [prediction.slide_id],
+        request.user_id
+    )
+    total_count = await get_total_predictions_count(db, [prediction.slide_id])
+
     return {
         'annotation': annotation,
-        'next_annotation': next_annotation
+        'next_annotation': next_annotation,
+        'metadata': AnnotationMetadata(
+            user_annotated=Counts.from_dict(user_annotated_count.get(
+                prediction.slide_id, {}
+            )),
+            total=Counts.from_dict(total_count.get(prediction.slide_id, {}))
+        )
     }
 
 
@@ -489,7 +404,7 @@ async def get_next_annotation(
             db_models.Prediction,
             db_models.Annotation,
             and_(
-                db_models.Prediction.wsi_id == slide_id,
+                db_models.Prediction.slide_id == slide_id,
                 db_models.Annotation.user_id == user_id,
                 db_models.Prediction.id == db_models.Annotation.prediction_id
             )
@@ -502,3 +417,80 @@ async def get_next_annotation(
     annotation = annotation.first()
 
     return annotation[0] if annotation is not None else None
+
+
+async def get_total_predictions_count(
+    db: AsyncSession,
+    slide_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, dict[str, int]]:
+    total_count_query = select(
+        db_models.Prediction.slide_id,
+        db_models.Prediction.label,
+        func.count(db_models.Prediction.label).label('count')
+    ).select_from(
+        db_models.Prediction
+    ).where(
+        db_models.Prediction.slide_id.in_(slide_ids)
+    ).group_by(
+        db_models.Prediction.slide_id,
+        db_models.Prediction.label
+    )
+
+    total_counts_result = await db.execute(total_count_query)
+    total_counts_result = total_counts_result.fetchall()
+
+    slides_total_count: dict[uuid.UUID, dict[str, int]] = {}
+
+    for row in total_counts_result:
+        slide_id: uuid.UUID = row[0]
+        label: str = row[1]
+        count: int = row[2]
+
+        if slide_id not in slides_total_count:
+            slides_total_count[slide_id] = {}
+
+        slides_total_count[slide_id].update({label: count})
+
+    return slides_total_count
+
+
+async def get_total_annotations_count(
+    db: AsyncSession,
+    slide_ids: list[uuid.UUID],
+    user_id: CUID
+) -> dict[uuid.UUID, dict[str, int]]:
+    user_annotation_count_query = select(
+        db_models.Prediction.slide_id,
+        db_models.Annotation.label,
+        func.count().label('count')
+    ).select_from(
+        outerjoin(
+            db_models.Annotation,
+            db_models.Prediction,
+            and_(
+                db_models.Prediction.slide_id.in_(slide_ids),
+                db_models.Annotation.user_id == user_id,
+                db_models.Prediction.id == db_models.Annotation.prediction_id
+            )
+        )
+    ).group_by(
+        db_models.Prediction.slide_id,
+        db_models.Annotation.label
+    )
+
+    user_annotation_count_result = await db.execute(user_annotation_count_query)
+    user_annotation_count_result = user_annotation_count_result.fetchall()
+
+    user_counts: dict[uuid.UUID, dict[str, int]] = {}
+
+    for row in user_annotation_count_result:
+        slide_id: uuid.UUID = row[0]
+        label: str = row[1]
+        count: int = row[2]
+
+        if slide_id not in user_counts:
+            user_counts[slide_id] = {}
+
+        user_counts[slide_id].update({label: count})
+
+    return user_counts

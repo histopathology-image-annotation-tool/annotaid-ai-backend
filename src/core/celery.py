@@ -10,6 +10,11 @@ celery_app.conf.event_serializer = 'pickle'
 celery_app.conf.task_serializer = 'pickle'
 celery_app.conf.result_serializer = 'pickle'
 celery_app.conf.accept_content = ['application/json', 'application/x-python-serialize']
+celery_app.conf.broker_transport_options = {
+    'queue_order_strategy': 'priority',
+    'sep': ":",
+    'priority_steps': list(range(5))
+}
 
 celery_app.autodiscover_tasks([
     'src.celery.nuclick',

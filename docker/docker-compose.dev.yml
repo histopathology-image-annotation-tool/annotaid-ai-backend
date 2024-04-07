@@ -30,6 +30,7 @@ services:
     depends_on:
       - redis
       - postgis
+    command: "celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL"
     deploy:
       resources:
         reservations:
@@ -37,6 +38,18 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+  celery_reader:
+    build:
+      context: ../
+      dockerfile: ./docker/worker.dockerfile
+    image: annotaid/worker.dev
+    env_file:
+      - ../.env
+    depends_on:
+      - redis
+      - postgis
+    command: "celery -A src.core.celery worker --pool=gevent --concurrency=2 --loglevel=info -Q reader"
 
   postgis:
     image: postgis/postgis:16-master
