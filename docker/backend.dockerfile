@@ -56,4 +56,4 @@ COPY --chown=744 scripts/api/prestart.sh scripts/api/start.sh ./
 
 EXPOSE 8000
 
-CMD ["./start.sh", "uvicorn", "src.main:app", "--host", "0.0.0.0"]
+CMD ["/bin/bash", "start.sh", "uvicorn", "src.main:app", "--host", "0.0.0.0"]
