@@ -29,7 +29,7 @@ class WholeSlideImage(Base):
     predictions: Mapped[list['Prediction']] = relationship(
         "Prediction",
         back_populates="slide",
-        lazy="selectin"
+        # lazy="selectin"
     )
     hash: Mapped[str] = mapped_column(
         String(256),
@@ -75,7 +75,7 @@ class Prediction(Base):
     slide: Mapped["WholeSlideImage"] = relationship(
         'WholeSlideImage',
         back_populates="predictions",
-        lazy="selectin"
+        # lazy="selectin"
     )
     slide_id: Mapped[UUID] = mapped_column(
         ForeignKey('slides.id', ondelete="CASCADE"),
@@ -85,7 +85,7 @@ class Prediction(Base):
     annotations: Mapped[list['Annotation']] = relationship(
         "Annotation",
         back_populates="prediction",
-        lazy="selectin"
+        # lazy="selectin"
     )
     bbox: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
@@ -126,7 +126,7 @@ class Annotation(Base):
     prediction: Mapped["Prediction"] = relationship(
         'Prediction',
         back_populates="annotations",
-        lazy="selectin"
+        # lazy="selectin"
     )
     prediction_id: Mapped[UUID] = mapped_column(
         ForeignKey('predictions.id', ondelete="CASCADE"),
