@@ -1,5 +1,14 @@
 #!/bin/bash
 
+SCRIPT_PATH=$(dirname $(realpath -s $0))
+
+# Import functions
+source $SCRIPT_PATH/functions.sh
+
+# Define the MD5 checksums
+md5ChecksumFirstStage="b925a51aa6acaf889f6104f239c1c0a5"
+md5ChecksumSecondStage="50dbb9d396ef71cb660b1c0b7961cf62"
+
 # Define the directory path
 directoryPath="models/"
 
@@ -16,12 +25,14 @@ filePathFirstStage="$directoryPath/$fileNameFirstStage"
 fileNameSecondStage="MC_second_stage.pt"
 filePathSecondStage="$directoryPath/$fileNameSecondStage"
 
-echo "Downloading $url_first_stage to $filePathFirstStage..."
-curl -L -o "$filePathFirstStage" "$url_first_stage"
+download_file $url_first_stage $filePathFirstStage $md5ChecksumFirstStage
+if [[ $? -ne 0 ]]; then
+    echo "First stage download was unsuccessful. Exiting script with error."
+    exit 1
+fi
 
-echo "Download completed: $filePathFirstStage"
-
-echo "Downloading $url_second_stage to $filePathSecondStage..."
-curl -L -o "$filePathSecondStage" "$url_second_stage"
-
-echo "Download completed: $filePathSecondStage"
+download_file $url_second_stage $filePathSecondStage $md5ChecksumSecondStage
+if [[ $? -ne 0 ]]; then
+    echo "Second stage download was unsuccessful. Exiting script with error."
+    exit 1
+fi

@@ -1,3 +1,13 @@
+# Get the path to the Download-File.ps1 script
+$scriptPath = Join-Path -Path $PSScriptRoot -ChildPath "functions.ps1"
+
+# Dot-source the Download-File.ps1 script
+. $scriptPath
+
+# Define the MD5 checksums
+$md5ChecksumFirstStage = "b925a51aa6acaf889f6104f239c1c0a5"
+$md5ChecksumSecondStage = "50dbb9d396ef71cb660b1c0b7961cf62"
+
 # Define the directory path
 $directoryPath = "models\"
 
@@ -16,20 +26,17 @@ $fileFirstStagePath = Join-Path -Path $directoryPath -ChildPath $fileNameFirstSt
 $fileNameSecondStage = "MC_second_stage.pt"
 $fileSecondStagePath = Join-Path -Path $directoryPath -ChildPath $fileNameSecondStage
 
-# Disable progressbar, because it slows dowload
-# https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
-$ProgressPreference = 'SilentlyContinue'
+# Download the first stage weights
+$downloadFirstStageSuccessful = DownloadFile -url $url_first_stage -filePath $fileFirstStagePath -md5Checksum $md5ChecksumFirstStage
 
-# Download first-stage model
-Write-Output "Downloading $url_first_stage to $fileFirstStagePath..."
-Invoke-WebRequest -Uri $url_first_stage -OutFile $fileFirstStagePath
+if (-not $downloadFirstStageSuccessful) {
+    Write-Host "The first model weights was downloaded unsuccessfully. Exiting script with error."
+    exit 1
+}
 
-Write-Output "Download completed: $fileFirstStagePath"
+$downloadSecondStageSuccessful = DownloadFile -url $url_second_stage -filePath $fileSecondStagePath -md5Checksum $md5ChecksumSecondStage
 
-# Download second-stage model
-Write-Output "Downloading $url_second_stage to $fileSecondStagePath"
-Invoke-WebRequest -Uri $url_second_stage -OutFile $fileSecondStagePath
-
-Write-Output "Download completed: $fileSecondStagePath"
-
-$ProgressPreference = 'Continue'
+if (-not $downloadSecondStageSuccessful) {
+    Write-Host "The second model weights was downloaded unsuccessfully. Exiting script with error."
+    exit 1
+}

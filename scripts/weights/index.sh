@@ -12,5 +12,12 @@ do
     then
         echo "Executing: $file"
         bash "$file"
+
+        # Check the exit status of the script
+        if [ $? -ne 0 ]
+        then
+            echo "Error: $file exited with a non-zero status code."
+            exit 1
+        fi
     fi
 done

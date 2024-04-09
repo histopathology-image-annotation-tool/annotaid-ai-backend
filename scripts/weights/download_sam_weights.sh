@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_PATH=$(dirname $(realpath -s $0))
+
+# Import functions
+source $SCRIPT_PATH/functions.sh
+
+# Define the MD5 checksum
+md5Checksum="01ec64d29a2fca3f0661936605ae66f8"
+
 # Define the directory path
 directoryPath="models/"
 
@@ -12,7 +20,8 @@ url="https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
 fileName="sam_vit_b_01ec64.pth"
 filePath="$directoryPath/$fileName"
 
-echo "Downloading $url to $filePath..."
-curl -L -o "$filePath" "$url"
-
-echo "Download completed: $filePath"
+download_file $url $fileName $md5Checksum
+if [[ $? -ne 0 ]]; then
+    echo "The model weights downloaded unsuccessfully. Exiting script with error."
+    exit 1
+fi

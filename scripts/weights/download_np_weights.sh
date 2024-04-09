@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_PATH=$(dirname $(realpath -s $0))
+
+# Import functions
+source $SCRIPT_PATH/functions.sh
+
+# Define the MD5 checksum
+md5Checksum="ee942fcbdaa306f46d807e7e3137447d"
+
 # Define the directory path
 directoryPath="models/"
 
@@ -12,7 +20,8 @@ url="https://drive.usercontent.google.com/download?id=1DdQLXbEZOaUm_3IqWj1YfCMK2
 fileName="NP_model.pt"
 filePath="$directoryPath/$fileName"
 
-echo "Downloading $url to $filePath..."
-curl -L -o "$filePath" "$url"
-
-echo "Download completed: $filePath"
+download_file $url $fileName $md5Checksum
+if [[ $? -ne 0 ]]; then
+    echo "The model weights downloaded unsuccessfully. Exiting script with error."
+    exit 1
+fi
