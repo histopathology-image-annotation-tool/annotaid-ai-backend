@@ -6,6 +6,8 @@
 
 ### Chore
 
+* chore: fix nvidia dependencies [skip ci] ([`7827e19`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/7827e19545db7334214671d7d15f6d7930e5b698))
+
 * chore: fix nvidia dependencies [skip ci] ([`f24eb6d`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/f24eb6dbef96e59149a22434b7d9d4f10936a335))
 
 ### Feature
@@ -15,6 +17,8 @@
 * feat: add prediction_id to Annotation response and fix saving annotation message ([`d3f018f`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/d3f018fb2f4e6714ad5eef113f6947209bd7f6ad))
 
 ### Fix
+
+* fix: download weight script paths ([`427e86b`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/427e86bb513e3b48f7b1ee5fdb48468997962762))
 
 * fix: MC celery task ([`6661f20`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/6661f202364f4f340f40a884d588bdfa24f5ab80))
 
