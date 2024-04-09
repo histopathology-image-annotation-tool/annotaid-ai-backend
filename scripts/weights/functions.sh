@@ -1,3 +1,5 @@
+#!/bin/bash
+
 download_file() {
     local url=$1
     local filePath=$2

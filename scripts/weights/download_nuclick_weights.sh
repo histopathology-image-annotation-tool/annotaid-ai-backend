@@ -20,7 +20,7 @@ url="https://drive.usercontent.google.com/download?id=1JBK3vWsVC4DxbcStukwnKNZm-
 fileName="nuclick_40x.pth"
 filePath="$directoryPath/$fileName"
 
-download_file $url $fileName $md5Checksum
+download_file $url $filePath $md5Checksum
 if [[ $? -ne 0 ]]; then
     echo "The model weights downloaded unsuccessfully. Exiting script with error."
     exit 1

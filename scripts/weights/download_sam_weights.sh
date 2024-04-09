@@ -20,7 +20,7 @@ url="https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
 fileName="sam_vit_b_01ec64.pth"
 filePath="$directoryPath/$fileName"
 
-download_file $url $fileName $md5Checksum
+download_file $url $filePath $md5Checksum
 if [[ $? -ne 0 ]]; then
     echo "The model weights downloaded unsuccessfully. Exiting script with error."
     exit 1
