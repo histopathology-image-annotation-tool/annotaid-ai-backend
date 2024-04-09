@@ -1,5 +1,13 @@
 #!/bin/bash
 
+SCRIPT_PATH=$(dirname $(realpath -s $0))
+
+# Import functions
+source $SCRIPT_PATH/functions.sh
+
+# Define the MD5 checksum
+md5Checksum="8ff0c2fd069c303d1c8d7d34a52968e8"
+
 # Define the directory path
 directoryPath="models/"
 
@@ -12,7 +20,8 @@ url="https://drive.usercontent.google.com/download?id=1JBK3vWsVC4DxbcStukwnKNZm-
 fileName="nuclick_40x.pth"
 filePath="$directoryPath/$fileName"
 
-echo "Downloading $url to $filePath..."
-curl -L -o "$filePath" "$url"
-
-echo "Download completed: $filePath"
+download_file $url $fileName $md5Checksum
+if [[ $? -ne 0 ]]; then
+    echo "The model weights downloaded unsuccessfully. Exiting script with error."
+    exit 1
+fi

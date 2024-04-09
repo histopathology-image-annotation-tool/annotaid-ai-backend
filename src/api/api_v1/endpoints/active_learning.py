@@ -338,14 +338,15 @@ async def upsert_slide_annotations(
         )
     )
 
-    annotation = annotation_result.fetchone()
+    annotation = annotation_result.scalar()
 
     if annotation is None:
         new_annotation = db_models.Annotation(
             user_id=request.user_id,
             prediction_id=prediction_id,
             bbox=request.bbox.convert_to_wkt(),
-            label=request.label
+            label=request.label,
+            message=request.message
         )
 
         db.add(new_annotation)
@@ -356,14 +357,13 @@ async def upsert_slide_annotations(
 
         annotation = new_annotation
     else:
-        annotation = annotation[0]
-
         if annotation.prediction_id != prediction_id:
             raise HTTPException(status_code=404, detail="Annotation not found")
 
         annotation.user_id = request.user_id
         annotation.bbox = request.bbox.convert_to_wkt()
         annotation.label = request.label
+        annotation.message = request.message
 
         await db.commit()
         await db.refresh(annotation)
@@ -404,12 +404,15 @@ async def get_next_annotation(
             db_models.Prediction,
             db_models.Annotation,
             and_(
-                db_models.Prediction.slide_id == slide_id,
-                db_models.Annotation.user_id == user_id,
-                db_models.Prediction.id == db_models.Annotation.prediction_id
+                db_models.Prediction.id == db_models.Annotation.prediction_id,
+                db_models.Annotation.user_id == user_id
             )
         )
-    ).where(db_models.Annotation.prediction_id.is_(None)).order_by(
+    ).where(
+        db_models.Annotation.prediction_id.is_(None)
+    ).where(
+        db_models.Prediction.slide_id == slide_id
+    ).order_by(
         db_models.Prediction.probability.asc()
     )
 
@@ -464,7 +467,7 @@ async def get_total_annotations_count(
         db_models.Annotation.label,
         func.count().label('count')
     ).select_from(
-        outerjoin(
+        join(
             db_models.Annotation,
             db_models.Prediction,
             and_(
