@@ -237,7 +237,7 @@ async def get_slide_prediction_for_annotation(
     user_annotated_count = await get_total_annotations_count(db, [slide_id], user_id)
     total_count = await get_total_predictions_count(db, [slide_id])
 
-    return {
+    return {  # type: ignore
         'prediction': prediction,
         'metadata': AnnotationMetadata(
             user_annotated=Counts.from_dict(user_annotated_count.get(slide_id, {})),
@@ -345,7 +345,8 @@ async def upsert_slide_annotations(
             user_id=request.user_id,
             prediction_id=prediction_id,
             bbox=request.bbox.convert_to_wkt(),
-            label=request.label
+            label=request.label,
+            message=request.message
         )
 
         db.add(new_annotation)
@@ -364,6 +365,7 @@ async def upsert_slide_annotations(
         annotation.user_id = request.user_id
         annotation.bbox = request.bbox.convert_to_wkt()
         annotation.label = request.label
+        annotation.message = request.message
 
         await db.commit()
         await db.refresh(annotation)
@@ -381,7 +383,7 @@ async def upsert_slide_annotations(
     )
     total_count = await get_total_predictions_count(db, [prediction.slide_id])
 
-    return {
+    return {  # type: ignore
         'annotation': annotation,
         'next_annotation': next_annotation,
         'metadata': AnnotationMetadata(

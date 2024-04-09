@@ -155,6 +155,7 @@ class ALPredictSlideRequest(BaseModel):
 class Annotation(BaseModel):
     """Represents an annotation."""
     id: UUID
+    prediction_id: UUID
     user_id: CUID
     bbox: BoundingBox
     label: AnnotationLabel
