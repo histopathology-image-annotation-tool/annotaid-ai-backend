@@ -1,8 +1,8 @@
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import and_, func, join, outerjoin, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,9 +96,20 @@ async def predict_slide(
 async def get_slides(
     params: PaginatedParams = Depends(),
     user_id: CUID | None = None,
+    search: Annotated[
+        str | None,
+        Query(
+            max_length=100,
+            description="Full-text search by path (ignore-case)"
+        )
+    ] = None,
     db: AsyncSession = Depends(get_async_session)
 ) -> PaginatedResponse[WholeSlideImageWithMetadata]:
-    slides_query = select(db_models.WholeSlideImage)
+    slides_query = select(
+        db_models.WholeSlideImage
+    ).where(
+        db_models.WholeSlideImage.path.ilike(f"%{search}%") if search else True
+    )
 
     slides = await paginate(
         db,
