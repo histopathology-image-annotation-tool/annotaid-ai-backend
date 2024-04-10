@@ -103,13 +103,33 @@ async def get_slides(
             description="Full-text search by path (ignore-case)"
         )
     ] = None,
+    only_predicted: Annotated[
+        bool,
+        Query(
+            description="Filter only slides with predictions"
+        )
+    ] = False,
     db: AsyncSession = Depends(get_async_session)
 ) -> PaginatedResponse[WholeSlideImageWithMetadata]:
     slides_query = select(
-        db_models.WholeSlideImage
-    ).where(
-        db_models.WholeSlideImage.path.ilike(f"%{search}%") if search else True
+        db_models.WholeSlideImage,
     )
+
+    if only_predicted:
+        slides_query = slides_query.distinct().select_from(
+            join(
+                db_models.WholeSlideImage,
+                db_models.Prediction,
+                db_models.WholeSlideImage.id == db_models.Prediction.slide_id
+            )
+        )
+
+    if search is not None:
+        slides_query = slides_query.where(
+            db_models.WholeSlideImage.path.icontains(search)
+        )
+
+    print(str(slides_query))
 
     slides = await paginate(
         db,
