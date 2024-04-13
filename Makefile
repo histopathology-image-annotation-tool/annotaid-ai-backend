@@ -90,7 +90,7 @@ run_be:
 ifeq ($(env),docker)
 	@docker run -dt -p 8000:8000 --env-file .env annotaid/backend.dev
 else ifeq ($(env),local)
-	@watchmedo auto-restart --directory=./src --pattern=* --recursive -- uvicorn src.main:app
+	@watchmedo auto-restart --directory=./src --pattern=*.py --recursive -- uvicorn src.main:app
 else
 	@echo "Invalid arguments, supported only: docker, local"
 	@echo "Examples:"

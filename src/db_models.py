@@ -99,6 +99,7 @@ class Prediction(Base):
     )
     probability: Mapped[float] = mapped_column(Float, nullable=False)
     label: Mapped[str] = mapped_column(String(25), nullable=False)
+    model_hash: Mapped[str] = mapped_column(String(10), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,

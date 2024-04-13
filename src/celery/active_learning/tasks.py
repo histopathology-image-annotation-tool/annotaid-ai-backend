@@ -347,12 +347,14 @@ def store_predictions(
                     continue
 
             prediction = db_models.Prediction(
-                slide_id=slide.id,
-                type='MC_TASK',
-                bbox=bbox_wkt,
+                slide_id=slide.id, type='MC_TASK', bbox=bbox_wkt,
                 probability=prediction['conf'],
-                label=transform_label(str(prediction['label']))
-            )
+                label=transform_label(str(prediction['label'])),
+                model_hash=None
+                if 'model_hash'
+                not in prediction else
+                prediction['model_hash']
+                [: db_models.Prediction.model_hash.property.columns[0].type.length])
 
             session.add(prediction)
 

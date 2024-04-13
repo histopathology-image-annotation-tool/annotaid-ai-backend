@@ -116,7 +116,8 @@ def predict_second_stage(
     model: EfficientNet,
     image: np.ndarray,
     bboxes: list[np.ndarray],
-    device: torch.device
+    device: torch.device,
+    model_hash: str | None = None
 ) -> list[MitosisPrediction]:
     """Classifies the mitotic candidates in the input image
     using the second stage model.
@@ -176,7 +177,8 @@ def predict_second_stage(
         results.append({
             'bbox': bbox,
             'label': label.item(),
-            'conf': prob.item()
+            'conf': prob.item(),
+            'model_hash': model_hash
         })
 
     return results

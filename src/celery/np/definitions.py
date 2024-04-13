@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 import torch
@@ -15,6 +16,7 @@ class NPPredictTask(Task):
         super().__init__()
 
         self.model: EfficientNet = None
+        self.model_hash: str | None = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -27,5 +29,8 @@ class NPPredictTask(Task):
             model.load_state_dict(checkpoint['model_state_dict'])
 
             self.model = model
+
+            with open(settings.NP_MODEL_PATH, 'rb') as model_file:
+                self.model_hash = hashlib.md5(model_file.read()).hexdigest()
 
         return self.run(*args, **kwargs)

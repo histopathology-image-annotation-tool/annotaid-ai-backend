@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 import torch
@@ -18,19 +19,21 @@ class MCFirstStageTask(Task):
     def __init__(self) -> None:
         super().__init__()
 
-        # self.model: YOLO = None
         self.model: AutoDetectionModel = None
+        self.model_hash: str | None = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         if not self.model:
-            # self.model = YOLO(settings.MC_FIRST_STAGE_MODEL_PATH, task='detect')
             self.model = AutoDetectionModel.from_pretrained(
                 model_type='yolov8',
                 model_path=settings.MC_FIRST_STAGE_MODEL_PATH,
                 confidence_threshold=0.25,
                 device=self.device,
             )
+
+            with open(settings.MC_FIRST_STAGE_MODEL_PATH, 'rb') as model_file:
+                self.model_hash = hashlib.md5(model_file.read()).hexdigest()
 
         return self.run(*args, **kwargs)
 
@@ -45,6 +48,7 @@ class MCSecondStageTask(Task):
         super().__init__()
 
         self.model: EfficientNet = None
+        self.model_hash: str | None = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -61,5 +65,8 @@ class MCSecondStageTask(Task):
             model.to(self.device)
 
             self.model = model
+
+            with open(settings.MC_SECOND_STAGE_MODEL_PATH, 'rb') as model_file:
+                self.model_hash = hashlib.md5(model_file.read()).hexdigest()
 
         return self.run(*args, **kwargs)
