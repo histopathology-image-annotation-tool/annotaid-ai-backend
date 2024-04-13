@@ -1,16 +1,21 @@
 import uuid
 
 import numpy as np
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from redis import Redis
 
 from celery.result import AsyncResult
 from src.core.celery import celery_app
+from src.core.redis import get_redis_session
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.mc import MCPredictRequest, MCPredictResponse, MitosisLabel
-from src.utils.api import load_image
+from src.schemas.shared import HTTPError
+from src.utils.api import exist_task, load_image
 
 router = APIRouter()
+
+PREDICT_MC_TASK_NAME = 'src.celery.mc.tasks.predict_mc_task'
 
 
 @router.post(
@@ -26,7 +31,7 @@ async def predict_mc(request: MCPredictRequest) -> AsyncTaskResponse:
     offset = [request.offset.x, request.offset.y] \
         if request.offset is not None else [0, 0]
 
-    task = celery_app.send_task('src.celery.mc.tasks.predict_mc_task', kwargs={
+    task = celery_app.send_task(PREDICT_MC_TASK_NAME, kwargs={
         'image': image,
         'offset': offset
     })
@@ -38,16 +43,24 @@ async def predict_mc(request: MCPredictRequest) -> AsyncTaskResponse:
     '/models/mc',
     response_model=MCPredictResponse,
     responses={
-        202: {'model': AsyncTaskResponse}
+        202: {'model': AsyncTaskResponse},
+        404: {'model': HTTPError}
     }
 )
-async def get_mc_result(task_id: uuid.UUID) -> MCPredictResponse:
+async def get_mc_result(
+    task_id: uuid.UUID,
+    db_redis: Redis = Depends(get_redis_session)
+) -> MCPredictResponse:
     """Endpoint for retrieving the result of a mitosis detection task.
-    If the provided task_id doesn't belong to any submitted task,
-    the PENDING status is returned.
     The task result is deleted immediately after the first read.
     """
+    if not exist_task(db_redis, task_id):
+        raise HTTPException(status_code=404, detail='Task not found')
+
     task = AsyncResult(str(task_id))
+
+    if task.name != PREDICT_MC_TASK_NAME:
+        raise HTTPException(status_code=404, detail='Task not found')
 
     if not task.ready():
         return JSONResponse({

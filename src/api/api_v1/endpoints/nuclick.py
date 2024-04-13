@@ -2,7 +2,7 @@ import asyncio
 import uuid
 
 import numpy as np
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from redis import Redis
 
@@ -16,9 +16,12 @@ from src.schemas.nuclick import (
     NuclickPredictRequest,
     NuclickPredictResponse,
 )
-from src.utils.api import load_image
+from src.schemas.shared import HTTPError
+from src.utils.api import exist_task, load_image
 
 router = APIRouter()
+
+PREDICT_NUCLICK_TASK_NAME = 'src.celery.nuclick.tasks.predict_nuclick_task'
 
 
 @router.post(
@@ -34,7 +37,7 @@ async def predict_nuclick(
     image = np.array(image)
 
     task = celery_app.send_task(
-        'src.celery.nuclick.tasks.predict_nuclick_task',
+        PREDICT_NUCLICK_TASK_NAME,
         kwargs={
             'image': image,
             'keypoints': request.keypoints,
@@ -44,7 +47,7 @@ async def predict_nuclick(
     )
 
     while True:
-        if r.exists(f'celery-task-meta-{task.task_id}'):
+        if exist_task(r, task.task_id):
             break
         await asyncio.sleep(0.3)
 
@@ -79,7 +82,7 @@ async def predict_bbox_dense_annotation(
     ]
 
     task = celery_app.send_task(
-        'src.celery.nuclick.tasks.predict_nuclick_task',
+        PREDICT_NUCLICK_TASK_NAME,
         kwargs={
             'image': image,
             'keypoints': keypoints,
@@ -98,18 +101,24 @@ async def predict_bbox_dense_annotation(
     '/models/nuclick/bbox-dense',
     response_model=NuclickPredictResponse,
     responses={
-        202: {'model': AsyncTaskResponse}
+        202: {'model': AsyncTaskResponse},
+        404: {'model': HTTPError}
     }
 )
 async def get_predict_bbox_dense_annotation_result(
-    task_id: uuid.UUID
+    task_id: uuid.UUID,
+    db_redis: Redis = Depends(get_redis_session)
 ) -> NuclickPredictResponse:
     """Endpoint for retrieving the result of a nuclei segmentation task.
-    If the provided task_id doesn't belong to any submitted task,
-    the PENDING status is returned.
     The task result is deleted immediately after the first read.
     """
+    if not exist_task(db_redis, task_id):
+        raise HTTPException(status_code=404, detail='Task not found')
+
     task = AsyncResult(str(task_id))
+
+    if task.name != PREDICT_NUCLICK_TASK_NAME:
+        raise HTTPException(status_code=404, detail='Task not found')
 
     if not task.ready():
         return JSONResponse({

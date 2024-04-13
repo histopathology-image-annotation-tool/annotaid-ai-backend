@@ -5,7 +5,7 @@ from functools import reduce
 from typing import Annotated, Any
 
 import numpy as np
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from redis import Redis
 
@@ -19,10 +19,12 @@ from src.schemas.sam import (
     SAMPredictRequest,
     SAMPredictResponse,
 )
-from src.schemas.shared import BoundingBox
-from src.utils.api import load_image
+from src.schemas.shared import BoundingBox, HTTPError
+from src.utils.api import exist_task, load_image
 
 router = APIRouter()
+
+GET_SAM_EMBEDDINGS_TASK_NAME = 'src.celery.sam.tasks.get_sam_embeddings_task'
 
 
 @router.post(
@@ -35,7 +37,7 @@ async def get_sam_embeddings(request: GetSAMEmbeddingsRequest) -> AsyncTaskRespo
     image = np.array(image)
 
     task = celery_app.send_task(
-        'src.celery.sam.tasks.get_sam_embeddings_task',
+        GET_SAM_EMBEDDINGS_TASK_NAME,
         kwargs={
             'image': image,
         }
@@ -51,17 +53,24 @@ async def get_sam_embeddings(request: GetSAMEmbeddingsRequest) -> AsyncTaskRespo
     '/models/sam/embeddings',
     response_model=AsyncTaskResponse,
     responses={
-        202: {'model': AsyncTaskResponse}
+        202: {'model': AsyncTaskResponse},
+        404: {'model': HTTPError}
     }
 )
 async def get_sam_embeddings_result(
-    task_id: uuid.UUID
+    task_id: uuid.UUID,
+    db_redis: Redis = Depends(get_redis_session)
 ) -> AsyncTaskResponse:
     """Endpoint for retrieving the status for the extraction of SAM encoder embeddings.
     If the embeddings are ready to use, the SUCCESS status is returned.
-    If the provided task_id doesn't belong to any submitted task,
-    the PENDING status is returned."""
+    """
+    if not exist_task(db_redis, task_id):
+        raise HTTPException(status_code=404, detail='Task not found')
+
     task = AsyncResult(str(task_id))
+
+    if task.name != GET_SAM_EMBEDDINGS_TASK_NAME:
+        raise HTTPException(status_code=404, detail='Task not found')
 
     if not task.ready():
         return JSONResponse({
@@ -133,7 +142,7 @@ async def predict_sam(
     )
 
     while True:
-        if r.exists(f'celery-task-meta-{task.task_id}'):
+        if exist_task(r, task.task_id):
             break
         await asyncio.sleep(0.3)
 
