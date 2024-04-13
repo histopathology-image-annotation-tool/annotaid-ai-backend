@@ -16,7 +16,7 @@ endif
 venv:
 	$(PYTHON) -m venv $(VENV_NAME)
 	$(ACTIVATE) && \
-	$(PYTHON) -m pip install poetry==1.6.1 && \
+	$(PYTHON) -m pip install poetry==1.8.2 && \
 	poetry install && \
 	pre-commit install
 
