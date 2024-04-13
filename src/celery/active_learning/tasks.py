@@ -11,6 +11,8 @@ from sqlalchemy import desc
 
 import src.db_models as db_models
 from celery import Task, shared_task, subtask
+from celery.canvas import Signature
+from celery.result import AsyncResult
 from src.celery import AL_QUEUE, AL_QUEUE_1, READER_QUEUE
 from src.celery.database import get_session
 from src.celery.mc.tasks import _predict_mc_task
@@ -42,6 +44,18 @@ def download_tile(
     y: int,
     tile_size: int
 ) -> np.ndarray:
+    """Download a tile from the reader service.
+
+    Args:
+        level (int): The level of the slide.
+        slide_path (str): The path to the slide.
+        x (int): The x coordinate of the tile.
+        y (int): The y coordinate of the tile.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        np.ndarray: The tile as a numpy array.
+    """
     response = httpx.get(
         join_url(settings.READER_URL, slide_path),
         params={
@@ -71,6 +85,17 @@ def crop_tile(
     y: int,
     tile_size: int
 ) -> np.ndarray:
+    """Crop a tile from the reader service.
+
+    Args:
+        slide_path (str): The path to the slide.
+        x (int): The x coordinate of the tile.
+        y (int): The y coordinate of the tile.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        np.ndarray: The cropped tile as a numpy array.
+    """
     response = httpx.get(
         join_url(settings.READER_URL, f"/crop/{slide_path}"),
         params={
@@ -99,6 +124,15 @@ def download_metadata(
     slide_path: str,
     level: int | None = None
 ) -> GetSlideMetadataResponse:
+    """Download slide metadata from the reader service.
+
+    Args:
+        slide_path (str): The path to the slide.
+        level (int | None): The level (magnification) of the slide.
+
+    Returns:
+        GetSlideMetadataResponse: The slide metadata.
+    """
     response = httpx.get(
         join_url(
             settings.READER_URL,
@@ -116,6 +150,16 @@ def create_tissue_mask(
     median_blur: int = 5,
     slic_region_size: int = 32
 ) -> np.ndarray:
+    """Create a tissue mask from an image.
+
+    Args:
+        image (np.ndarray): The image.
+        median_blur (int): The median blur.
+        slic_region_size (int): The slic region size.
+
+    Returns:
+        np.ndarray: The tissue mask (binary form).
+    """
     image_hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     image_s = image_hsv[:, :, 1]
 
@@ -155,6 +199,18 @@ def clean_data(
     mitoses: list[MitosisPrediction],
     image: np.ndarray
 ) -> list[MitosisPrediction]:
+    """Clean the data by removing false positives.
+    It compares the predicted mitoses and hard-negative mitoses to the reference image.
+
+    Args:
+        mitoses (list[MitosisPrediction]): The predicted mitoses and
+        hard-negative mitoses.
+        image (np.ndarray): The image.
+
+    Returns:
+        list[MitosisPrediction]: The cleaned predicted mitoses and
+        hard-negative mitoses.
+    """
     cleared_mitoses: list[MitosisPrediction] = []
 
     for mitos in mitoses:
@@ -191,6 +247,21 @@ def get_tiles_coords_from_tissue_mask(
     tile_size: int = 2048,
     overlap: float = 0.05
 ) -> list[tuple[int, int]]:
+    """Get the coordinates of the tiles from the tissue mask. It extracts the tiles
+    that contain more than 50% tissue.
+
+    Args:
+        mask (np.ndarray): The tissue mask.
+        slide_width (int): The width of the slide.
+        slide_height (int): The height of the slide.
+        mask_magnification (int): The magnification of the mask.
+        slide_magnification (int): The magnification of the slide.
+        tile_size (int): The size of the tile.
+        overlap (float): The overlap of the tiles.
+
+    Returns:
+        list[tuple[int, int]]: The coordinates of the tiles.
+    """
     coords = []
 
     magnifier = 2**(slide_magnification - mask_magnification)
@@ -228,6 +299,18 @@ def store_predictions(
     predictions: list[MitosisPrediction],
     slide_path: str,
 ) -> None:
+    """Store the predictions in the database.
+
+    Args:
+        predictions (list[MitosisPrediction]): The predictions.
+        slide_path (str): The path to the slide.
+
+    Raises:
+        ValueError: If the whole slide image is not found.
+
+    Returns:
+        None
+    """
     with get_session() as session:
         slide = session.query(
             db_models.WholeSlideImage
@@ -281,6 +364,15 @@ def add_offset(
     mitosis: list[MitosisPrediction],
     offset: tuple[int, int]
 ) -> list[MitosisPrediction]:
+    """Add an offset to the predicted mitoses.
+
+    Args:
+        mitosis (list[MitosisPrediction]): The predicted mitoses.
+        offset (tuple[int, int]): The offset.
+
+    Returns:
+        list[MitosisPrediction]: The predicted mitoses with the offset.
+    """
     copied_mitosis = copy.deepcopy(mitosis)
 
     bbox_offset = np.array([*offset, *offset], dtype=np.int32)
@@ -296,6 +388,14 @@ def predict_mitoses_and_clean_result(
     self: Task,
     image: np.ndarray
 ) -> list[MitosisPrediction]:
+    """Predict mitoses and clean the false positive results.
+
+    Args:
+        image (np.ndarray): The image.
+
+    Returns:
+        list[MitosisPrediction]: The cleaned predictions as Signature.
+    """
     sig = subtask(
         _predict_mc_task.s(image=image, offset=(0, 0)),
         queue=AL_QUEUE
@@ -312,7 +412,18 @@ def process_tile(
     coords: np.ndarray,
     slide_path: str,
     tile_size: int
-) -> None:
+) -> Signature:
+    """Process a tile. It crops the tile, predicts mitoses, cleans the results,
+    adds an offset, and stores the predictions in the database.
+
+    Args:
+        coords (np.ndarray): The coordinates of the tile.
+        slide_path (str): The path to the slide.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        Signature: The signature of the task.
+    """
     sig = crop_tile.s(
         slide_path=slide_path,
         x=coords[0],
@@ -341,6 +452,17 @@ def get_slide_best_magnification(
     slide_path: str,
     tile_size: int = 2048
 ) -> tuple[int, GetSlideMetadataResponse, GetSlideMetadataResponse]:
+    """Get the best magnification of the slide.
+    It iterates over the magnifications from the biggest to the smallest one and
+    stops when the size of the slide is smaller than the tile size.
+
+    Args:
+        slide_path (str): The path to the slide.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        tuple[int, GetSlideMetadataResponse, GetSlideMetadataResponse]:
+        The best magnification, the mask metadata, and the slide metadata."""
     current_magnification = 0
     max_magnification: int | None = None
     mask_metadata = None
@@ -385,15 +507,27 @@ def get_coords(
     path: str,
     tile_size: int = 2048
 ) -> list[tuple[int, int]]:
+    """Get the coordinates of the tiles from the best magnification of the slide.
+    It downloads the tiles, creates a tissue mask,
+    and extracts the tiles that contain more than 50% tissue.
+
+    Args:
+        mask_magnification (int): The magnification of the mask.
+        mask_metadata (GetSlideMetadataResponse): The mask metadata.
+        slide_metadata (GetSlideMetadataResponse): The slide metadata.
+        path (str): The path to the slide.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        list[tuple[int, int]]: The coordinates of the tiles as Signature.
+    """
     sig = download_tile.s(
         level=mask_magnification,
         slide_path=path,
         x=0,
         y=0,
         tile_size=tile_size
-    ) | create_tissue_mask.s(
-
-    ) | get_tiles_coords_from_tissue_mask.s(
+    ) | create_tissue_mask.s() | get_tiles_coords_from_tissue_mask.s(
         slide_width=int(slide_metadata.size.width.pixel),
         slide_height=int(slide_metadata.size.height.pixel),
         mask_magnification=mask_magnification,
@@ -408,7 +542,18 @@ def get_coords(
 def process_slide(
     path: str,
     tile_size: int = 2048
-) -> None:
+) -> AsyncResult:
+    """Process a slide. It gets the best magnification of the slide,
+    the mask metadata, and the slide metadata.
+    Then, it gets the coordinates of the tiles and processes them.
+
+    Args:
+        path (str): The path to the slide.
+        tile_size (int): The size of the tile.
+
+    Returns:
+        AsyncResult: The result of the task.
+    """
     chain = get_slide_best_magnification.s(
         slide_path=path,
         tile_size=tile_size
@@ -432,6 +577,11 @@ def process_slide(
 
 @shared_task(ignore_result=True, queue=READER_QUEUE)
 def get_list_of_slide_files() -> list[str]:
+    """Get the list of slide files from the reader service.
+
+    Returns:
+        list[str]: The list of slide files.
+    """
     response = httpx.get(
         join_url(settings.READER_URL, "/ls/mnt"),
         params={
@@ -458,6 +608,18 @@ def get_list_of_slide_files() -> list[str]:
     queue=AL_QUEUE
 )
 def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
+    """Store slide metadata in the database.
+    If the slide is already in the database, it updates it.
+
+    Args:
+        metadatas (list[GetSlideMetadataResponse]): The slide metadata.
+
+    Raises:
+        ValueError: If the slide is not found.
+
+    Returns:
+        None
+    """
     with get_session() as session:
         hashes = [metadata.hash for metadata in metadatas]
 
@@ -490,7 +652,13 @@ def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
 
 
 @shared_task(ignore_result=True, queue=READER_QUEUE)
-def synchronize_slides() -> None:
+def synchronize_slides() -> AsyncResult:
+    """Synchronize the slides.
+    It gets the list of slide files, downloads the metadata, and stores it.
+
+    Returns:
+        AsyncResult: The result of the task (None).
+    """
     chain = get_list_of_slide_files.s() | subtask(
         dmap.s(
             download_metadata.s()

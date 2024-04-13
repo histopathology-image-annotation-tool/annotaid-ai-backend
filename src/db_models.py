@@ -19,6 +19,7 @@ from src.core.database import Base
 
 
 class WholeSlideImage(Base):
+    """The WholeSlideImage model class."""
     __tablename__ = "slides"
 
     id: Mapped[UUID] = mapped_column(
@@ -28,8 +29,7 @@ class WholeSlideImage(Base):
     )
     predictions: Mapped[list['Prediction']] = relationship(
         "Prediction",
-        back_populates="slide",
-        # lazy="selectin"
+        back_populates="slide"
     )
     hash: Mapped[str] = mapped_column(
         String(256),
@@ -64,6 +64,7 @@ PredictionType = Literal["MC_TASK"]
 
 
 class Prediction(Base):
+    """The Prediction model class."""
     __tablename__ = "predictions"
 
     id: Mapped[UUID] = mapped_column(
@@ -121,6 +122,7 @@ class Prediction(Base):
 
 
 class Annotation(Base):
+    """The Annotation model class."""
     __tablename__ = "annotations"
 
     id: Mapped[UUID] = mapped_column(
