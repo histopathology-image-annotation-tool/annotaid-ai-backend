@@ -118,9 +118,11 @@ def _predict_mc_task(
     Returns:
         list[MitosisPrediction]: The predictions for the mitotic candidates.
     """
-    sig = predict_mc_first_stage_task.s(image=image) | \
-        predict_mc_second_stage_task.s(image=image) | \
-        apply_offset_to_bboxes.s(offset=offset)
+    queue = self.request.delivery_info['routing_key']
+
+    sig = predict_mc_first_stage_task.s(image=image).set(queue=queue) | \
+        predict_mc_second_stage_task.s(image=image).set(queue=queue) | \
+        apply_offset_to_bboxes.s(offset=offset).set(queue=queue)
 
     return self.replace(sig)
 

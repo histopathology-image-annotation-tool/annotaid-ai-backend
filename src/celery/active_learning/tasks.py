@@ -10,7 +10,7 @@ from PIL import Image
 from sqlalchemy import desc
 
 import src.db_models as db_models
-from celery import Task, shared_task, subtask
+from celery import Task, shared_task
 from celery.canvas import Signature
 from celery.result import AsyncResult
 from src.celery import AL_QUEUE, AL_QUEUE_1, READER_QUEUE
@@ -398,10 +398,9 @@ def predict_mitoses_and_clean_result(
     Returns:
         list[MitosisPrediction]: The cleaned predictions as Signature.
     """
-    sig = subtask(
-        _predict_mc_task.s(image=image, offset=(0, 0)),
-        queue=AL_QUEUE
-    ) | clean_data.s(
+    sig = _predict_mc_task.s(
+        image=image, offset=(0, 0)
+    ).set(queue=AL_QUEUE) | clean_data.s(
         image=image
     )
 
@@ -559,20 +558,17 @@ def process_slide(
     chain = get_slide_best_magnification.s(
         slide_path=path,
         tile_size=tile_size
-    ) | subtask(
-        expand_args.s(
-            get_coords.s(
-                path=path,
-                tile_size=tile_size
-            )
-        ),
-        queue=AL_QUEUE
-    ) | dmap.s(
+    ) | expand_args.s(
+        get_coords.s(
+            path=path,
+            tile_size=tile_size
+        )
+    ).set(queue=AL_QUEUE) | dmap.s(
         process_tile.s(
             slide_path=path,
             tile_size=tile_size
         )
-    )
+    ).set(queue=AL_QUEUE)
 
     return chain()
 
@@ -653,19 +649,16 @@ def store_metadata(metadatas: list[GetSlideMetadataResponse]) -> None:
         session.commit()
 
 
-@shared_task(ignore_result=True, queue=READER_QUEUE)
-def synchronize_slides() -> AsyncResult:
+@shared_task(bind=True, ignore_result=True, queue=READER_QUEUE)
+def synchronize_slides(self: Task) -> AsyncResult:
     """Synchronize the slides.
     It gets the list of slide files, downloads the metadata, and stores it.
 
     Returns:
         AsyncResult: The result of the task (None).
     """
-    chain = get_list_of_slide_files.s() | subtask(
-        dmap.s(
-            download_metadata.s()
-        ),
-        queue=READER_QUEUE
-    ) | store_metadata.s()
+    chain = get_list_of_slide_files.s() | dmap.s(
+        download_metadata.s()
+    ).set(queue=READER_QUEUE) | store_metadata.s()
 
     return chain()

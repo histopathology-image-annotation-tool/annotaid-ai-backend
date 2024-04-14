@@ -35,6 +35,8 @@ def expand_args(self: Task, args: Any, func: Signature) -> Signature:
     Returns:
         Signature: The expanded function.
     """
+    print(self.request)
+
     func = subtask(func)
 
     sig = func.clone([*args])

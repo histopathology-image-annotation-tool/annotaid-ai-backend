@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import src.db_models as db_models
 from celery.result import AsyncResult
+from src.celery import AL_QUEUE, READER_QUEUE
 from src.core.celery import celery_app
 from src.core.database import get_async_session
 from src.core.redis import get_redis_session
@@ -107,7 +108,8 @@ async def predict_slide(
         PROCESS_SLIDE_TASK_NAME,
         kwargs={
             'path': Path(slide.path).as_posix()
-        }
+        },
+        queue=AL_QUEUE
     )
 
     return {'task_id': task.task_id, 'status': task.status}
@@ -254,7 +256,8 @@ async def synchronize_slides() -> AsyncTaskResponse:
     """
 
     task = celery_app.send_task(
-        'src.celery.active_learning.tasks.synchronize_slides'
+        'src.celery.active_learning.tasks.synchronize_slides',
+        queue=READER_QUEUE
     )
 
     return {'task_id': task.task_id, 'status': task.status}
