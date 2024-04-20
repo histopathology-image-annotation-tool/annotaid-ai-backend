@@ -257,6 +257,7 @@ async def synchronize_slides() -> AsyncTaskResponse:
 
     task = celery_app.send_task(
         'src.celery.active_learning.tasks.synchronize_slides',
+        ignore_result=True,
         queue=READER_QUEUE
     )
 
