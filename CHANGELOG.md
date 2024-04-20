@@ -2,6 +2,45 @@
 
 
 
+## v0.6.0 (2024-04-20)
+
+### Chore
+
+* chore: update poetry version ([`75ae625`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/75ae62511d13d41ab9c7855fc1ff3d3e6b46198b))
+
+* chore: update pre-commit hooks ([`9c078a9`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/9c078a9f74b1674c132306343f2bdf7fa8db1ba7))
+
+* chore: update dev dependencies ([`138657a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/138657a6f636568c3e97b38388baabf04533cc2a))
+
+* chore: fix nvidia dependencies [skip ci] ([`dfc23dd`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/dfc23ddb1048ed97dc2550b828329818132ea444))
+
+### Documentation
+
+* docs: add comments for the AL celery tasks and API ([`ebc20f6`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/ebc20f6c9561e78d2d4aba9a734ae46a4593285e))
+
+### Feature
+
+* feat: add a check if celery tasks exist for result retrieving API endpoints ([`1f3c613`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/1f3c613fe8fb258e49acad1ffec92a0586ff9adb))
+
+* feat: add model hash column for the predictions table ([`3258e1a`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/3258e1ae7496c9dc532fa68ec65f5a50d4989cd4))
+
+* feat: add possibility to filter only slides with predictions ([`81c5257`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/81c5257fb9842e709bf0ef98750b54667235f875))
+
+* feat: add full-text search for slide path ([`0070352`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/0070352a0343408f69265f3b2215aeabf13fc1c3))
+
+### Fix
+
+* fix: prepopulate result key only for my tasks ([`1ce6736`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/1ce67361f45e056efb83f1ee1abbb31c52cf133d))
+
+* fix: AL task routing ([`38590ba`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/38590ba83022eddb1aabeb040520c8f6155cb62c))
+
+* fix: semantic release version variable in pyproject ([`cf87207`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/cf872072839edc97bd7fff1399caa175e89d6860))
+
+### Unknown
+
+* Merge branch &#39;feat/AL_slides&#39; ([`86dbf93`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/86dbf93524b165d0f1c24e1dafe72193905474de))
+
+
 ## v0.5.0 (2024-04-09)
 
 ### Chore
