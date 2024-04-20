@@ -52,6 +52,15 @@ class Settings(BaseSettings):
         _: str | None,
         values: ValidationInfo
     ) -> str:
+        """Assemble the database connection string for asyncpg or psycopg2.
+
+        Args:
+            _: The value of the field.
+            values (ValidationInfo): The validation information.
+
+        Returns:
+            str: The database connection string.
+        """
         scheme = 'postgresql+asyncpg' \
             if values.field_name == 'SQLALCHEMY_DATABASE_URI_ASYNC' \
             else 'postgresql+psycopg2'

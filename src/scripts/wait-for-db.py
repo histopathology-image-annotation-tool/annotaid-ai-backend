@@ -26,7 +26,15 @@ WAIT_SECONDS = 5
     before=before_log(logger, logging.INFO),
     after=after_log(logger, logging.WARN),
 )
-async def migrate() -> None:
+async def wait_for_db() -> None:
+    """Wait for the database to be ready.
+
+    Raises:
+        Exception: If the database is not ready after the maximum number of tries.
+
+    Returns:
+        None: The database is ready.
+    """
     try:
         async for session in get_async_session():
             await session.execute(select(1))
@@ -36,8 +44,9 @@ async def migrate() -> None:
 
 
 async def main() -> None:
+    """Run the main script."""
     logger.info("Waiting for database...")
-    await migrate()
+    await wait_for_db()
     logger.info("Database is ready!")
 
 

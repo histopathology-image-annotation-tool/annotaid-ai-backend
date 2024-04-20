@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any, TypedDict
 
 import numpy as np
@@ -32,6 +33,7 @@ class SAMTask(Task):
         super().__init__()
 
         self.model: Sam = None
+        self.model_hash: str | None = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -42,5 +44,8 @@ class SAMTask(Task):
             model.to(self.device)
 
             self.model = model
+
+            with open(settings.SAM_MODEL_PATH, 'rb') as model_file:
+                self.model_hash = hashlib.md5(model_file.read()).hexdigest()
 
         return self.run(*args, **kwargs)

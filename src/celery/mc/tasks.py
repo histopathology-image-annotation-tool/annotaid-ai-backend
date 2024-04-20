@@ -75,7 +75,8 @@ def predict_mc_second_stage_task(
         model=self.model,
         image=image,
         bboxes=bboxes,
-        device=self.device
+        device=self.device,
+        model_hash=self.model_hash
     )
 
 
@@ -117,9 +118,11 @@ def _predict_mc_task(
     Returns:
         list[MitosisPrediction]: The predictions for the mitotic candidates.
     """
-    sig = predict_mc_first_stage_task.s(image=image) | \
-        predict_mc_second_stage_task.s(image=image) | \
-        apply_offset_to_bboxes.s(offset=offset)
+    queue = self.request.delivery_info['routing_key']
+
+    sig = predict_mc_first_stage_task.s(image=image).set(queue=queue) | \
+        predict_mc_second_stage_task.s(image=image).set(queue=queue) | \
+        apply_offset_to_bboxes.s(offset=offset).set(queue=queue)
 
     return self.replace(sig)
 
@@ -129,9 +132,8 @@ def save_result(mitoses: list[MitosisPrediction]) -> list[MitosisPrediction]:
     return mitoses
 
 
-@celery_app.task(bind=True, ignore_result=False, track_started=True)
+@celery_app.task(ignore_result=False, track_started=True)
 def predict_mc_task(
-    self: Task,
     image: np.ndarray,
     offset: tuple[int, int]
 ) -> list[MitosisPrediction]:

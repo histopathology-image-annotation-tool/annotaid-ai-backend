@@ -19,6 +19,7 @@ from src.core.database import Base
 
 
 class WholeSlideImage(Base):
+    """The WholeSlideImage model class."""
     __tablename__ = "slides"
 
     id: Mapped[UUID] = mapped_column(
@@ -28,8 +29,7 @@ class WholeSlideImage(Base):
     )
     predictions: Mapped[list['Prediction']] = relationship(
         "Prediction",
-        back_populates="slide",
-        # lazy="selectin"
+        back_populates="slide"
     )
     hash: Mapped[str] = mapped_column(
         String(256),
@@ -51,11 +51,20 @@ class WholeSlideImage(Base):
         onupdate=text("now()")
     )
 
+    __table_args__ = (
+        Index(
+            'idx_path_trgm',
+            postgresql_ops={"path": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
+    )
+
 
 PredictionType = Literal["MC_TASK"]
 
 
 class Prediction(Base):
+    """The Prediction model class."""
     __tablename__ = "predictions"
 
     id: Mapped[UUID] = mapped_column(
@@ -74,8 +83,7 @@ class Prediction(Base):
     )
     slide: Mapped["WholeSlideImage"] = relationship(
         'WholeSlideImage',
-        back_populates="predictions",
-        # lazy="selectin"
+        back_populates="predictions"
     )
     slide_id: Mapped[UUID] = mapped_column(
         ForeignKey('slides.id', ondelete="CASCADE"),
@@ -84,14 +92,14 @@ class Prediction(Base):
     )
     annotations: Mapped[list['Annotation']] = relationship(
         "Annotation",
-        back_populates="prediction",
-        # lazy="selectin"
+        back_populates="prediction"
     )
     bbox: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POLYGON", srid=4326, spatial_index=True),
     )
     probability: Mapped[float] = mapped_column(Float, nullable=False)
     label: Mapped[str] = mapped_column(String(25), nullable=False)
+    model_hash: Mapped[str] = mapped_column(String(10), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -106,7 +114,7 @@ class Prediction(Base):
 
     __table_args__ = (
         Index(
-            "order_probability_asc_idx",
+            "idx_order_probability_asc",
             "probability",
             postgresql_using="btree",
             postgresql_ops={"probability": "ASC"}
@@ -115,6 +123,7 @@ class Prediction(Base):
 
 
 class Annotation(Base):
+    """The Annotation model class."""
     __tablename__ = "annotations"
 
     id: Mapped[UUID] = mapped_column(
@@ -125,8 +134,7 @@ class Annotation(Base):
     user_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     prediction: Mapped["Prediction"] = relationship(
         'Prediction',
-        back_populates="annotations",
-        # lazy="selectin"
+        back_populates="annotations"
     )
     prediction_id: Mapped[UUID] = mapped_column(
         ForeignKey('predictions.id', ondelete="CASCADE"),
@@ -152,7 +160,7 @@ class Annotation(Base):
 
     __table_args__ = (
         Index(
-            "order_created_at_desc_idx",
+            "idx_order_created_at_desc",
             "created_at",
             postgresql_using="btree",
             postgresql_ops={"created_at": "DESC"}

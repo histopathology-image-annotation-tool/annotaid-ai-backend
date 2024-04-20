@@ -1,15 +1,18 @@
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from redis import Redis
 from sqlalchemy import and_, func, join, outerjoin, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import src.db_models as db_models
 from celery.result import AsyncResult
+from src.celery import AL_QUEUE, READER_QUEUE
 from src.core.celery import celery_app
 from src.core.database import get_async_session
+from src.core.redis import get_redis_session
 from src.schemas.active_learning import (
     ALPredictSlideRequest,
     Annotation,
@@ -24,18 +27,34 @@ from src.schemas.active_learning import (
 )
 from src.schemas.celery import AsyncTaskResponse
 from src.schemas.shared import CUID, HTTPError
+from src.utils.api import exist_task
 from src.utils.pagination import PaginatedParams, paginate
 
 router = APIRouter()
+
+PROCESS_SLIDE_TASK_NAME = 'src.celery.active_learning.tasks.process_slide'
 
 
 @router.get(
     '/active_learning/models/mc',
     response_model=AsyncTaskResponse,
-    status_code=200,
+    responses={
+        202: {'model': AsyncTaskResponse},
+        404: {'model': HTTPError}
+    }
 )
-async def get_slide_prediction_result(task_id: uuid.UUID) -> AsyncTaskResponse:
+async def get_slide_prediction_result(
+    task_id: uuid.UUID,
+    db_redis: Redis = Depends(get_redis_session)
+) -> AsyncTaskResponse:
+    """Endpoint for retrieving the result of a slide mitosis detection task."""
+    if not exist_task(db_redis, task_id):
+        raise HTTPException(status_code=404, detail='Task not found')
+
     task = AsyncResult(str(task_id))
+
+    if task.name != PROCESS_SLIDE_TASK_NAME:
+        raise HTTPException(status_code=404, detail='Task not found')
 
     if not task.ready():
         return {
@@ -66,7 +85,10 @@ async def predict_slide(
     db: AsyncSession = Depends(get_async_session)
 ) -> AsyncTaskResponse:
     """Endpoint for initiating a mitosis detection task on a slide for active learning.
+    If the provided task_id doesn't belong to any submitted task,
+    the PENDING status is returned.
     """
+
     # Check if the slide is in database
     result = await db.execute(
         select(
@@ -83,10 +105,11 @@ async def predict_slide(
 
     # Send task to process the slide
     task = celery_app.send_task(
-        'src.celery.active_learning.tasks.process_slide',
+        PROCESS_SLIDE_TASK_NAME,
         kwargs={
             'path': Path(slide.path).as_posix()
-        }
+        },
+        queue=AL_QUEUE
     )
 
     return {'task_id': task.task_id, 'status': task.status}
@@ -96,9 +119,41 @@ async def predict_slide(
 async def get_slides(
     params: PaginatedParams = Depends(),
     user_id: CUID | None = None,
+    search: Annotated[
+        str | None,
+        Query(
+            max_length=100,
+            description="Full-text search by path (ignore-case)"
+        )
+    ] = None,
+    only_predicted: Annotated[
+        bool,
+        Query(
+            description="Filter only slides with predictions"
+        )
+    ] = False,
     db: AsyncSession = Depends(get_async_session)
 ) -> PaginatedResponse[WholeSlideImageWithMetadata]:
-    slides_query = select(db_models.WholeSlideImage)
+    """Endpoint for retrieving a list of slides with metadata for active learning."""
+    slides_query = select(
+        db_models.WholeSlideImage,
+    )
+
+    if only_predicted:
+        slides_query = slides_query.distinct().select_from(
+            join(
+                db_models.WholeSlideImage,
+                db_models.Prediction,
+                db_models.WholeSlideImage.id == db_models.Prediction.slide_id
+            )
+        )
+
+    if search is not None:
+        slides_query = slides_query.where(
+            db_models.WholeSlideImage.path.icontains(search)
+        )
+
+    print(str(slides_query))
 
     slides = await paginate(
         db,
@@ -154,6 +209,8 @@ async def get_slide(
     user_id: CUID | None = None,
     db: AsyncSession = Depends(get_async_session)
 ) -> WholeSlideImageWithMetadata:
+    """Endpoint for retrieving a slide with metadata for active learning."""
+
     # Check if the slide is in database
     result = await db.execute(
         select(
@@ -195,8 +252,13 @@ async def get_slide(
     response_model=AsyncTaskResponse
 )
 async def synchronize_slides() -> AsyncTaskResponse:
+    """Endpoint for initiating a slide synchronization task with the slide store.
+    """
+
     task = celery_app.send_task(
-        'src.celery.active_learning.tasks.synchronize_slides'
+        'src.celery.active_learning.tasks.synchronize_slides',
+        ignore_result=True,
+        queue=READER_QUEUE
     )
 
     return {'task_id': task.task_id, 'status': task.status}
@@ -215,6 +277,10 @@ async def get_slide_prediction_for_annotation(
     user_id: CUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> PredictionWithMetadata | None:
+    """Endpoint for retrieving the next prediction for annotation on a slide
+    for specified user.
+    """
+
     # Check if the slide is in database
     result = await db.execute(
         select(
@@ -258,6 +324,8 @@ async def get_slide_annotations(
     user_id: CUID,
     db: AsyncSession = Depends(get_async_session)
 ) -> list[Annotation]:
+    """Endpoint for retrieving user annotations for a slide."""
+
     # Check if the slide is in database
     result = await db.execute(
         select(
@@ -313,6 +381,11 @@ async def upsert_slide_annotations(
     response: Response,
     db: AsyncSession = Depends(get_async_session)
 ) -> UpsertSlideAnnotationResponse:
+    """Endpoint for upserting an annotation for a prediction.
+    If the annotation with given prediction_id and user_id exists,
+    it will be updated, otherwise created.
+    """
+
     # Check if the prediction is in database
     prediction_result = await db.execute(
         select(db_models.Prediction).where(
@@ -398,6 +471,8 @@ async def get_next_annotation(
     slide_id: uuid.UUID,
     user_id: CUID
 ) -> Prediction | None:
+    """Get the next prediction for annotation for the given slide and user."""
+
     # Get annotation (prediction) for the slide for the given user
     query = select(db_models.Prediction).select_from(
         outerjoin(
@@ -426,6 +501,16 @@ async def get_total_predictions_count(
     db: AsyncSession,
     slide_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, dict[str, int]]:
+    """Get the total count of predictions for the given slides.
+
+    Args:
+        db: AsyncSession: Database session
+        slide_ids: list[uuid.UUID]: List of slide ids
+
+    Returns:
+        dict[uuid.UUID, dict[str, int]]: Total count of predictions for each slide
+    """
+
     total_count_query = select(
         db_models.Prediction.slide_id,
         db_models.Prediction.label,
@@ -462,6 +547,16 @@ async def get_total_annotations_count(
     slide_ids: list[uuid.UUID],
     user_id: CUID
 ) -> dict[uuid.UUID, dict[str, int]]:
+    """Get the total count of annotations for the given slides and user.
+
+    Args:
+        db: AsyncSession: Database session
+        slide_ids: list[uuid.UUID]: List of slide ids
+        user_id: CUID: User id
+
+    Returns:
+        dict[uuid.UUID, dict[str, int]]: Total count of annotations for each slide
+        and user"""
     user_annotation_count_query = select(
         db_models.Prediction.slide_id,
         db_models.Annotation.label,

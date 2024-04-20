@@ -2,18 +2,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt
 
-from celery import Task
-
-
-class PollingException(Exception):
-    pass
-
-
-class PollingTask(Task):
-    autoretry_for = (PollingException,)
-    retry_kwargs = {'max_retries': 100, 'countdown': 5}
-    retry_backoff = True
-
 
 class PixelsPerMeter(BaseModel):
     avg: NonNegativeFloat
@@ -40,6 +28,7 @@ class FileSize(BaseModel):
 
 
 class GetSlideMetadataResponse(BaseModel):
+    """Response model for the get slide metadata endpoint from the reader service"""
     magnification: NonNegativeInt
     format: str
     domains: list[str]
