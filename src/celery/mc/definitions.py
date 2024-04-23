@@ -2,10 +2,8 @@ import hashlib
 from typing import Any
 
 import torch
-import torch.nn as nn
-import torchvision
+from efficientnet_pytorch import EfficientNet
 from sahi import AutoDetectionModel
-from torchvision.models import EfficientNet
 
 from celery import Task
 from src.core.config import settings
@@ -58,8 +56,11 @@ class MCSecondStageTask(Task):
                 map_location='cpu'
             )
 
-            model = torchvision.models.efficientnet_b2(weights=None)
-            model.classifier = nn.Linear(in_features=1408, out_features=2)
+            model = EfficientNet.from_name(
+                'efficientnet-b4',
+                in_channels=3,
+                num_classes=2
+            )
 
             model.load_state_dict(checkpoint['model_state_dict'])
             model.to(self.device)

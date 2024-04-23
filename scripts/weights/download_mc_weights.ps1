@@ -5,8 +5,8 @@ $scriptPath = Join-Path -Path $PSScriptRoot -ChildPath "functions.ps1"
 . $scriptPath
 
 # Define the MD5 checksums
-$md5ChecksumFirstStage = "b925a51aa6acaf889f6104f239c1c0a5"
-$md5ChecksumSecondStage = "50dbb9d396ef71cb660b1c0b7961cf62"
+$md5ChecksumFirstStage = "1db89bc27cd96aeaa16b9894c879d3bc"
+$md5ChecksumSecondStage = "85610a44afecb385c42c2eab9c60a4c6"
 
 # Define the directory path
 $directoryPath = "models\"
@@ -17,8 +17,8 @@ if (-not (Test-Path $directoryPath)) {
 }
 
 # MC weights download URL
-$url_first_stage = "https://drive.usercontent.google.com/download?id=1DDEfvJvhgjh3PXHRHW7pql_Lcmodkpri&confirm=t"
-$url_second_stage = "https://drive.usercontent.google.com/download?id=1r8S42ksZgx0Cr1maBAaeQbPTOeUEWvFy&confirm=t"
+$url_first_stage = "https://drive.usercontent.google.com/download?id=1Zt9lCDMxcXIg-jtgMWQYpS43RkIHqUFi&confirm=t"
+$url_second_stage = "https://drive.usercontent.google.com/download?id=1ZknkLXuiJovzp9hz3lciyXCB5xmK_Wen&confirm=t"
 
 $fileNameFirstStage = "MC_first_stage.pt"
 $fileFirstStagePath = Join-Path -Path $directoryPath -ChildPath $fileNameFirstStage
