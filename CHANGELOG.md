@@ -2,6 +2,17 @@
 
 
 
+## v0.7.0 (2024-04-23)
+
+### Feature
+
+* feat: update MC models to v2 ([`8d0f905`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/8d0f905b89fbd64827e2d9536ab1702b90657663))
+
+### Unknown
+
+* Merge branch &#39;feat/mc_model&#39; ([`6b90af9`](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend/commit/6b90af94192250076b0f3d8a0299ca0b9100a187))
+
+
 ## v0.6.0 (2024-04-20)
 
 ### Chore
