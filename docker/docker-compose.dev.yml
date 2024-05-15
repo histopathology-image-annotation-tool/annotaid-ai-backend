@@ -1,64 +1,37 @@
 version: '3.8'
 
 services:
-  web:
-    build:
-      context: ../
-      dockerfile: ./docker/backend.dockerfile
-    image: annotaid/backend.dev
-    ports:
-      - 8000:8000
-    env_file:
-      - ../.env
-    depends_on:
-      - redis
-      - celery_worker
-      - postgis
-
   redis:
+    container_name: redis
     image: redis:alpine3.18
+    restart: on-failure
     ports:
       - 6379:6379
-
-  celery_worker:
-    build:
-      context: ../
-      dockerfile: ./docker/worker.dockerfile
-    image: annotaid/worker.dev
-    env_file:
-      - ../.env
-    depends_on:
-      - redis
-      - postgis
-    command: "celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  celery_reader:
-    build:
-      context: ../
-      dockerfile: ./docker/worker.dockerfile
-    image: annotaid/worker.dev
-    env_file:
-      - ../.env
-    depends_on:
-      - redis
-      - postgis
-    command: "celery -A src.core.celery worker --pool=gevent --concurrency=2 --loglevel=info -Q reader"
-
   postgis:
+    container_name: postgis
     image: postgis/postgis:16-master
+    restart: on-failure
     env_file:
       - ../.env
     ports:
       - 5432:5432
     volumes:
       - postgis_data:/var/lib/postgresql/data
+  reader:
+    container_name: reader
+    image: annotaid/reader:latest
+    restart: on-failure
+    env_file:
+      - ../.env
+    ports:
+      - 9000:9000
+    volumes:
+      - type: bind
+        source: $READER_SOURCE_DATA
+        target: $READER_TARGET_DATA
+      - type: bind
+        source: $READER_MEM_SOURCE
+        target: $READER_MEM_TARGET
 
 volumes:
   postgis_data:

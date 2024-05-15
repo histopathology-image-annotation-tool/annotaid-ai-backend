@@ -89,21 +89,21 @@ endif
 run_be:
 ifeq ($(env),docker)
 	@docker run -dt -p 8000:8000 --env-file .env annotaid/backend.dev
-else ifeq ($(env),local)
+else ifeq ($(env),dev)
 	@watchmedo auto-restart --directory=./src --pattern=*.py --recursive -- uvicorn src.main:app
 else
-	@echo "Invalid arguments, supported only: docker, local"
+	@echo "Invalid arguments, supported only: docker, dev"
 	@echo "Examples:"
-	@echo " make run_be env=local"
+	@echo " make run_be env=dev"
 endif
 
 run_worker:
 ifeq ($(env),docker)
 	@docker run -dt --env-file .env annotaid/worker.dev
-else ifeq ($(env),local)
+else ifeq ($(env),dev)
 	@watchmedo auto-restart --directory=./src/celery --pattern=*.py --recursive -- celery -A src.core.celery worker --pool=solo --loglevel=info -Q celery,AL,reader
 else
-	@echo "Invalid arguments, supported only: docker, local"
+	@echo "Invalid arguments, supported only: docker, dev"
 	@echo "Examples:"
 	@echo " make run_worker env=docker"
 endif
@@ -121,17 +121,18 @@ run_postgis:
 
 	@$(MAKE) migrate
 
+run_compose:
+	@docker-compose --env-file .env -f ./docker/docker-compose.dev.yml up
+
 run:
 ifeq ($(env),prod)
 	@docker-compose -f ./docker/docker-compose.dev.yml -f ./docker/docker-compose.prod.yml up
 else ifeq ($(env),dev)
-	@docker-compose -f ./docker/docker-compose.dev.yml up
-else ifeq ($(env),local)
-	@$(MAKE) -j run_redis run_postgis run_worker env=local run_be env=local
+	@$(MAKE) -j run_compose migrate run_worker env=dev run_be env=dev
 else
-	@echo "Invalid arguments, supported only: dev, prod, local"
+	@echo "Invalid arguments, supported only: dev, prod"
 	@echo "Examples:"
-	@echo " make run env=local"
+	@echo " make run env=dev"
 endif
 
 migrate:
@@ -156,5 +157,5 @@ help:
 	@echo "run_worker              : runs celery worker"
 	@echo "run_redis               : runs redis docker image"
 	@echo "run_postgis             : runs postgis docker image and migrations"
-	@echo "run                     : runs docker-compose or local dev"
+	@echo "run                     : runs docker-compose or dev dev"
 	@echo "migrate                 : runs migrations"
