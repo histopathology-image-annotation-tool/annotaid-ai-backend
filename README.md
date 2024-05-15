@@ -1,18 +1,22 @@
 [![AGPL 3.0][license-shield]][license]
 
 # AnnotAid AI Backend
+
 The AnnotAid AI Backend, built on FastAPI, offers a range of deep learning techniques to enhance the annotation process in the AnnotAid annotation tool. It facilitates the annotation of cells or more complex structures and offers assistance in evaluating individual criteria of the Nottingham Grading System.
 
 ## Project Structure
+
 ```
 +---.github                    # Github workflows
-|   \---workflows
+|   +---workflows
 +---.vscode                    # VSCode settings
 +---docker                     # Backend and Celery worker dockerfiles
 +---models                     # Downloaded weights
 +---scripts
 |   +---api                    # Scripts for backend
-|   \---weights                # Scripts used to download model weights
+|   +---production             # Scripts for production deployment
+|   +---weights                # Scripts used to download model weights
++---slides                     # WSI images
 +---src
 |   +---alembic
 |   |   +---versions           # Database migrations
@@ -35,7 +39,7 @@ The AnnotAid AI Backend, built on FastAPI, offers a range of deep learning techn
 |   +---schemas                # Validation schemas
 |   +---scripts
 |   +---utils
-\---tests
++---tests
 |   .env                       # Environment variables
 |   .env.example               # Example template of environment variables
 |   .flake8                    # Flake8 config
@@ -47,46 +51,61 @@ The AnnotAid AI Backend, built on FastAPI, offers a range of deep learning techn
 ```
 
 ## Prerequisites
+
 Make sure you have the following tools installed before setting up the project:
-* [Python 3](https://www.python.org/downloads/)
-* [Docker](https://www.docker.com/)
+
+- [Python 3](https://www.python.org/downloads/)
+- [Docker](https://www.docker.com/)
 
 ## Installation and Setup
+
 Clone the repository:
+
 ```
 git clone https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend AnnotAidAIBE
 cd AnnotAidAIBE
 ```
 
 ### Local development
+
 Create a Virtual Environment:
+
 ```
 make venv
 ```
 
 #### Setup .env file
+
 ```
 cp .env.example .env
 ```
 
 #### (Optional) Setup Datastore
+
 If you want to use active learning, you need to download a sample [VSI image](https://www.annotaid.com/) or put custom images into pre-configured folder specified in the .env file.
 
 #### Download Weights:
+
 ```
 make download_weights
 ```
 
 #### Run the project
+
 ```
 make run env=dev
 ```
 
+### Production Setup
+Instructions for production setup can be found in [README.md](scripts/production/README.md).
+
 ## Documentation
-* [Swagger](http://localhost:8000/docs)
-* [Redoc](http://localhost:8000/redoc)
+
+- [Swagger](http://localhost:8000/docs)
+- [Redoc](http://localhost:8000/redoc)
 
 ## License
+
 [AnnotAid AI Backend](https://github.com/histopathology-image-annotation-tool/annotaid-ai-backend) by [Adam Bublavý](https://github.com/Sangalaa/) is licensed under a
 [GNU Affero General Public License v3.0 or later][license].
 
